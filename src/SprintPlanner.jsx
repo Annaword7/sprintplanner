@@ -115,6 +115,78 @@ function computeMetrics(sprintName, snapData) {
     added, removed, status: "closed",
   };
 }
+// ═══════════════════════════════════════════════════════════════════════════
+// MOCK SNAPSHOTS (demo data for trend visualization) — disabled
+// ═══════════════════════════════════════════════════════════════════════════
+/* const MOCK_SNAPSHOTS=(()=>{
+  const AK="andrei.kirianov",IE="ivan.elfimov",VM="v.marmuz",EU="egor.uvarov",AS="aleksandr.sokolov";
+  const DV="d.vorotnikov",AA="aandreev";
+  const VP="vakropot",ES="elizaveta.shabnova",EM="emun";
+  const IP="iana.postnova";
+  const EB="Extrabeds",TL="TL Integration",CM="Channel Manager",CORE="Core";
+  function mkS(ts,raw){
+    const total=raw.length;
+    const pc={};raw.forEach(r=>{const p=r[8]||"Без проекта";pc[p]=(pc[p]||0)+1});
+    const projects=Object.entries(pc).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count,pct:Math.round(count/total*100)}));
+    return{timestamp:ts,projects,issues:raw.map(([id,be,fe,qa,des,mgr,a,q])=>({id,summary:id,state:"Open",assignee:a,qa:q,efforts:{be:be||0,fe:fe||0,qa:qa||0,des:des||0,mgr:mgr||0,total:(be||0)+(fe||0)+(qa||0)+(des||0)+(mgr||0)},reopens:0}))};
+  }
+  function mkE(ts,si,n){const done=new Set(si.slice(0,n).map(i=>i.id));return{timestamp:ts,issues:si.map(i=>({id:i.id,state:done.has(i.id)?"Done":"In Progress",reopens:0}))};}
+  const n01=[
+    ...[AK,IE,VM,EU,AS].flatMap((a,ai)=>([[`M01-${ai*3+1}`,5,0,2,0,0,a,VP,EB],[`M01-${ai*3+2}`,8,0,3,0,0,a,ES,ai<3?EB:TL],[`M01-${ai*3+3}`,ai===2?13:ai===4?9:5,0,ai===4?4:ai===2?5:2,0,0,a,EM,ai<2?CORE:ai===2?EB:ai===3?TL:CM]])),
+    ...[DV,AA].flatMap((a,ai)=>([[`M01-${16+ai*3}`,0,8,3,0,0,a,VP,EB],[`M01-${17+ai*3}`,0,ai===0?8:7,3,0,0,a,EM,TL],[`M01-${18+ai*3}`,0,7,2,0,0,a,ES,CORE]])),
+    [`M01-22`,0,0,7,0,0,VP,VP,EB],[`M01-23`,0,0,6,0,0,VP,VP,EB],[`M01-24`,0,0,5,0,0,VP,VP,CORE],
+    [`M01-25`,0,0,7,0,0,ES,ES,TL],[`M01-26`,0,0,6,0,0,ES,ES,TL],[`M01-27`,0,0,6,0,0,ES,ES,CM],
+    [`M01-28`,0,0,10,0,0,EM,EM,EB],[`M01-29`,0,0,8,0,0,EM,EM,EB],
+    [`M01-30`,0,0,0,0,5,IP,null,TL],[`M01-31`,0,0,0,0,5,IP,null,EB],
+  ];
+  const n02=[
+    [`M02-01`,8,0,3,0,0,AK,VP,EB],[`M02-02`,5,0,2,0,0,AK,ES,EB],[`M02-03`,8,0,3,0,0,AK,EM,CORE],[`M02-04`,5,0,2,0,0,AK,VP,TL],
+    [`M02-05`,8,0,3,0,0,IE,ES,EB],[`M02-06`,5,0,2,0,0,IE,EM,TL],[`M02-07`,5,0,2,0,0,IE,VP,CORE],
+    [`M02-08`,13,0,5,0,0,VM,EM,EB],[`M02-09`,8,0,5,0,0,VM,ES,EB],[`M02-10`,5,0,3,0,0,VM,VP,EB],[`M02-11`,5,0,2,0,0,VM,ES,CORE],
+    [`M02-12`,8,0,3,0,0,EU,EM,TL],[`M02-13`,5,0,2,0,0,EU,ES,TL],[`M02-14`,5,0,3,0,0,EU,VP,CM],
+    [`M02-15`,8,0,5,0,0,AS,EM,CM],[`M02-16`,5,0,3,0,0,AS,ES,CM],
+    [`M02-17`,0,8,3,0,0,DV,VP,EB],[`M02-18`,0,10,3,0,0,DV,EM,EB],[`M02-19`,0,7,3,0,0,DV,ES,CORE],
+    [`M02-20`,0,8,3,0,0,AA,VP,EB],[`M02-21`,0,8,3,0,0,AA,EM,TL],[`M02-22`,0,9,2,0,0,AA,ES,CORE],
+    [`M02-23`,0,0,8,0,0,VP,VP,EB],[`M02-24`,0,0,7,0,0,VP,VP,EB],[`M02-25`,0,0,5,0,0,VP,VP,CORE],
+    [`M02-26`,0,0,8,0,0,ES,ES,TL],[`M02-27`,0,0,7,0,0,ES,ES,TL],[`M02-28`,0,0,7,0,0,ES,ES,CM],
+    [`M02-29`,0,0,10,0,0,EM,EM,EB],[`M02-30`,0,0,8,0,0,EM,EM,EB],
+    [`M02-31`,0,0,0,0,8,IP,null,TL],[`M02-32`,0,0,0,0,7,IP,null,EB],
+  ];
+  const n03=[
+    [`M03-01`,5,0,2,0,0,AK,VP,EB],[`M03-02`,8,0,3,0,0,AK,ES,TL],[`M03-03`,3,0,2,0,0,AK,EM,CORE],
+    [`M03-04`,5,0,2,0,0,IE,VP,EB],[`M03-05`,8,0,3,0,0,IE,ES,TL],
+    [`M03-06`,8,0,5,0,0,VM,EM,EB],[`M03-07`,13,0,5,0,0,VM,VP,EB],[`M03-08`,3,0,2,0,0,VM,ES,CORE],
+    [`M03-09`,5,0,3,0,0,EU,EM,TL],[`M03-10`,8,0,3,0,0,EU,VP,TL],
+    [`M03-11`,8,0,5,0,0,AS,ES,CM],[`M03-12`,5,0,3,0,0,AS,EM,CM],[`M03-13`,8,0,5,0,0,AS,VP,CM],
+    [`M03-14`,0,8,3,0,0,DV,EM,EB],[`M03-15`,0,7,3,0,0,DV,ES,EB],
+    [`M03-16`,0,7,3,0,0,AA,VP,EB],[`M03-17`,0,8,3,0,0,AA,EM,TL],[`M03-18`,0,7,2,0,0,AA,ES,CORE],
+    [`M03-19`,0,0,6,0,0,VP,VP,EB],[`M03-20`,0,0,5,0,0,VP,VP,CORE],
+    [`M03-21`,0,0,8,0,0,ES,ES,TL],[`M03-22`,0,0,6,0,0,ES,ES,TL],[`M03-23`,0,0,5,0,0,ES,ES,CM],
+    [`M03-24`,0,0,8,0,0,EM,EM,EB],[`M03-25`,0,0,8,0,0,EM,EM,EB],
+    [`M03-26`,0,0,0,0,5,IP,null,EB],[`M03-27`,0,0,0,0,5,IP,null,TL],
+  ];
+  const n04=[
+    [`M04-01`,8,0,3,0,0,AK,VP,EB],[`M04-02`,5,0,2,0,0,AK,ES,EB],[`M04-03`,5,0,2,0,0,AK,EM,TL],[`M04-04`,3,0,2,0,0,AK,VP,CORE],
+    [`M04-05`,8,0,3,0,0,IE,ES,EB],[`M04-06`,5,0,2,0,0,IE,EM,TL],[`M04-07`,5,0,2,0,0,IE,VP,CORE],[`M04-08`,8,0,3,0,0,IE,ES,EB],
+    [`M04-09`,13,0,5,0,0,VM,EM,EB],[`M04-10`,8,0,5,0,0,VM,VP,EB],[`M04-11`,5,0,3,0,0,VM,ES,CORE],[`M04-12`,5,0,2,0,0,VM,EM,EB],
+    [`M04-13`,8,0,3,0,0,EU,VP,TL],[`M04-14`,5,0,2,0,0,EU,ES,TL],[`M04-15`,5,0,3,0,0,EU,EM,CM],
+    [`M04-16`,8,0,5,0,0,AS,VP,CM],[`M04-17`,5,0,3,0,0,AS,ES,CM],[`M04-18`,5,0,3,0,0,AS,EM,CM],
+    [`M04-19`,0,10,3,0,0,DV,VP,EB],[`M04-20`,0,8,3,0,0,DV,ES,EB],[`M04-21`,0,7,3,0,0,DV,EM,CORE],[`M04-22`,0,7,2,0,0,DV,VP,TL],
+    [`M04-23`,0,8,3,0,0,AA,ES,EB],[`M04-24`,0,8,3,0,0,AA,EM,TL],[`M04-25`,0,9,2,0,0,AA,VP,CORE],
+    [`M04-26`,0,0,8,0,0,VP,VP,EB],[`M04-27`,0,0,7,0,0,VP,VP,EB],[`M04-28`,0,0,5,0,0,VP,VP,CORE],
+    [`M04-29`,0,0,8,0,0,ES,ES,TL],[`M04-30`,0,0,7,0,0,ES,ES,TL],[`M04-31`,0,0,6,0,0,ES,ES,CM],
+    [`M04-32`,0,0,10,0,0,EM,EM,EB],[`M04-33`,0,0,8,0,0,EM,EM,EB],[`M04-34`,0,0,7,0,0,EM,EM,EB],
+    [`M04-35`,0,0,0,0,8,IP,null,TL],[`M04-36`,0,0,0,0,7,IP,null,EB],
+  ];
+  const s1=mkS(1736726400000,n01),s2=mkS(1737936000000,n02),s3=mkS(1739145600000,n03),s4=mkS(1740355200000,n04);
+  return{
+    "2026-N01 (Jan 13)":{start:s1,end:mkE(1737936000000,s1.issues,22)},
+    "2026-N02 (Jan 27)":{start:s2,end:mkE(1739145600000,s2.issues,26)},
+    "2026-N03 (Feb 10)":{start:s3,end:mkE(1740355200000,s3.issues,18)},
+    "2026-N04 (Feb 24)":{start:s4,end:mkE(1741564800000,s4.issues,30)},
+  };
+})(); */
+const MOCK_SNAPSHOTS = {};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DESIGN TOKENS
@@ -158,6 +230,8 @@ export default function SprintPlanner(){
   const[projectFields,setProjectFields]=useState([]);
   const[filterSprintRole,setFilterSprintRole]=useState("all");
   const[capacityOpen,setCapacityOpen]=useState(true);
+  const[capacityRoleFilter,setCapacityRoleFilter]=useState("all");
+  const[backlogCollapsed,setBacklogCollapsed]=useState(false);
   const[groupByProject,setGroupByProject]=useState(false);
   const[sortSprint,setSortSprint]=useState("none");
 
@@ -188,7 +262,7 @@ export default function SprintPlanner(){
   const filteredSprint=useMemo(()=>{let items=filterSprintRole==="all"?sprint:sprint.filter(i=>{const e=getEfforts(i);return({backend:e.be,frontend:e.fe,qa:e.qa,design:e.des,manager:e.mgr}[filterSprintRole]||0)>0});if(sortSprint==="assignee")items=[...items].sort((a,b)=>(gUser(a,FIELDS.ASSIGNEE)?.fullName||"я").localeCompare(gUser(b,FIELDS.ASSIGNEE)?.fullName||"я"));else if(sortSprint==="qa")items=[...items].sort((a,b)=>(gUser(a,FIELDS.QA)?.fullName||"я").localeCompare(gUser(b,FIELDS.QA)?.fullName||"я"));return items},[sprint,filterSprintRole,sortSprint]);
   const sprintTotals=useMemo(()=>{const t={be:0,fe:0,qa:0,des:0,mgr:0,total:0};sprint.forEach(i=>{const e=getEfforts(i);t.be+=e.be;t.fe+=e.fe;t.qa+=e.qa;t.des+=e.des;t.mgr+=e.mgr;t.total+=e.total});return t},[sprint]);
 
-  const capacity=useMemo(()=>{const map={};filteredConfig.forEach(m=>{map[m.login]={...m,load:0,tasks:[]}});sprint.forEach(issue=>{const efforts=getEfforts(issue);const aL=gUser(issue,FIELDS.ASSIGNEE)?.login;const qL=gUser(issue,FIELDS.QA)?.login;if(aL&&map[aL]){const eff=effortForRole(efforts,map[aL].role);if(eff>0){map[aL].load+=eff;map[aL].tasks.push({id:issue.idReadable,eff})}}if(qL&&map[qL]&&efforts.qa>0){map[qL].load+=efforts.qa;map[qL].tasks.push({id:issue.idReadable,eff:efforts.qa})}});Object.values(map).forEach(m=>{if(m.load>m.capacity+m.tolerance)m.status="over";else if(m.load>=m.capacity-m.tolerance)m.status="optimal";else if(m.load>=m.capacity*0.4)m.status="under";else m.status="empty"});return Object.values(map)},[sprint,filteredConfig]);
+  const capacity=useMemo(()=>{const map={};filteredConfig.forEach(m=>{map[m.login]={...m,load:0,tasks:[]}});sprint.forEach(issue=>{const efforts=getEfforts(issue);const aL=gUser(issue,FIELDS.ASSIGNEE)?.login;const qL=gUser(issue,FIELDS.QA)?.login;if(aL&&map[aL]){const role=map[aL].role;let eff;if(role==="qa"){eff=efforts.total;}else if(aL===qL){eff=effortForRole(efforts,role)+(efforts.qa||0);}else{eff=effortForRole(efforts,role);}map[aL].tasks.push({id:issue.idReadable,eff});if(eff>0)map[aL].load+=eff;}if(qL&&map[qL]&&qL!==aL){map[qL].tasks.push({id:issue.idReadable,eff:efforts.qa});if(efforts.qa>0)map[qL].load+=efforts.qa;}});Object.values(map).forEach(m=>{if(m.load>m.capacity+m.tolerance)m.status="over";else if(m.load>=m.capacity-m.tolerance)m.status="optimal";else if(m.load>=m.capacity*0.4)m.status="under";else m.status="empty"});return Object.values(map)},[sprint,filteredConfig]);
 
   const currentSnap = snapshots[sprintName] || null;
   const hasStart = !!currentSnap?.start;
@@ -330,15 +404,15 @@ export default function SprintPlanner(){
     if(f)setAvailableSprints(f.values);
   },[sprintField,projectFields]);
 
+  // Merge mock + real snapshots (real overrides mock)
+  const mergedSnapshots=useMemo(()=>({...MOCK_SNAPSHOTS,...snapshots}),[snapshots]);
+
   // All metrics from snapshots
   const allMetrics = useMemo(()=>{
-    const results=[];
-    Object.keys(snapshots).sort().forEach(name=>{
-      const sd=snapshots[name];
-      if(sd){const m=computeMetrics(name,sd);if(m)results.push(m)}
-    });
-    return results;
-  },[snapshots]);
+    return Object.keys(mergedSnapshots).sort().map(name=>{
+      const m=computeMetrics(name,mergedSnapshots[name]);return m;
+    }).filter(Boolean);
+  },[mergedSnapshots]);
 
   return(
     <ThemeCtx.Provider value={T}>
@@ -363,32 +437,42 @@ export default function SprintPlanner(){
       </div>
 
       {tab==="settings"?<SettingsTab members={mergedConfig} onUpdate={updateMember} onSave={handleSaveCap} saveStatus={saveStatus} storageLoaded={storageLoaded} savedQueries={savedQueries} onSaveQuery={saveQuery} onDeleteQuery={deleteQuery} sprintName={sprintName} onSetSprintName={setSprintName} teamLogins={teamLogins} onToggleTeamLogin={toggleTeamLogin} projectId={projectId} onSetProjectId={setProjectId} availableSprints={availableSprints} sprintField={sprintField} onSetSprintField={setSprintField} projectFields={projectFields} onLoadProjectFields={loadProjectFields} />
-      :tab==="metrics"?<MetricsTab allMetrics={allMetrics} sprintName={sprintName} sprint={sprint} totals={sprintTotals} capacity={capacity} currentSnap={currentSnap} />
+      :tab==="metrics"?<MetricsTab allMetrics={allMetrics} snapshots={mergedSnapshots} sprintName={sprintName} sprint={sprint} totals={sprintTotals} capacity={capacity} currentSnap={currentSnap} />
       :(
         <div style={{display:"flex",height:"calc(100vh - 55px)"}}>
           {/* Backlog */}
-          <div onDragOver={e=>{e.preventDefault();setDropZone("backlog")}} onDragLeave={()=>setDropZone(null)} onDrop={onDropBacklog} style={{width:"40%",minWidth:340,borderRight:"1px solid "+T.border,display:"flex",flexDirection:"column",background:dropZone==="backlog"&&dragId?T.redDim:"transparent",transition:"background .2s"}}>
-            <div style={{padding:"14px 18px 10px",borderBottom:"1px solid "+T.border}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <span style={{fontSize:14,fontWeight:700,color:T.text0}}>Бэклог</span>
-                <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:T.bg3,color:T.text2,fontFamily:T.mono,fontWeight:600}}>{backlog.length}</span>
-                {backlogLoading&&<span style={{fontSize:10,color:T.text3}}>Загружаю...</span>}
-                {backlogError&&<span style={{fontSize:10,color:T.red}} title={backlogError}>⚠ Ошибка</span>}
-                <button onClick={reload} title="Обновить" style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",fontSize:25,color:T.text3,padding:2}} onMouseEnter={e=>e.target.style.color=T.text1} onMouseLeave={e=>e.target.style.color=T.text3}>↻</button>
+          <div onDragOver={e=>{e.preventDefault();setDropZone("backlog")}} onDragLeave={()=>setDropZone(null)} onDrop={onDropBacklog} style={{width:backlogCollapsed?36:"40%",minWidth:backlogCollapsed?36:340,borderRight:"1px solid "+T.border,display:"flex",flexDirection:"column",background:dropZone==="backlog"&&dragId?T.redDim:"transparent",transition:"width .2s, min-width .2s",overflow:"hidden"}}>
+            {backlogCollapsed?(
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:14,gap:8}}>
+                <button onClick={()=>setBacklogCollapsed(false)} title="Развернуть бэклог" style={{background:"none",border:"none",cursor:"pointer",fontSize:25,color:T.text3,padding:4,lineHeight:1}} onMouseEnter={e=>e.target.style.color=T.accent} onMouseLeave={e=>e.target.style.color=T.text3}>›</button>
+                <span style={{fontSize:14,color:T.text3,writingMode:"vertical-rl",transform:"rotate(180deg)",fontWeight:600,letterSpacing:1}}>BACKLOG</span>
               </div>
-              <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
-                {savedQueries.map(q=><button key={q.id} onClick={()=>setActiveQueryId(q.id)} style={{padding:"3px 10px",borderRadius:5,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:activeQueryId===q.id?T.accentDim:"transparent",color:activeQueryId===q.id?T.accent:T.text3}}>{q.name}</button>)}
+            ):(
+            <>
+              <div style={{padding:"14px 18px 10px",borderBottom:"1px solid "+T.border}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <span style={{fontSize:14,fontWeight:700,color:T.text0}}>Бэклог</span>
+                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:T.bg3,color:T.text2,fontFamily:T.mono,fontWeight:600}}>{backlog.length}</span>
+                  {backlogLoading&&<span style={{fontSize:10,color:T.text3}}>Загружаю...</span>}
+                  {backlogError&&<span style={{fontSize:10,color:T.red}} title={backlogError}>⚠ Ошибка</span>}
+                  <button onClick={()=>setBacklogCollapsed(true)} title="Свернуть бэклог" style={{background:"none",border:"none",cursor:"pointer",fontSize:25,color:T.text3,padding:2,lineHeight:1}} onMouseEnter={e=>e.target.style.color=T.accent} onMouseLeave={e=>e.target.style.color=T.text3}>‹</button>
+                  <button onClick={reload} title="Обновить" style={{background:"none",border:"none",cursor:"pointer",fontSize:25,color:T.text3,padding:2}} onMouseEnter={e=>e.target.style.color=T.text1} onMouseLeave={e=>e.target.style.color=T.text3}>↻</button>
+                </div>
+                <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+                  {savedQueries.map(q=><button key={q.id} onClick={()=>setActiveQueryId(q.id)} style={{padding:"3px 10px",borderRadius:5,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:activeQueryId===q.id?T.accentDim:"transparent",color:activeQueryId===q.id?T.accent:T.text3}}>{q.name}</button>)}
+                </div>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{width:"100%",padding:"7px 12px",borderRadius:7,border:"1px solid "+T.border,background:T.bg2,color:T.text1,fontSize:12,outline:"none",marginBottom:8,fontFamily:T.font}} />
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  <FB label="Роль" value={filterRole} onChange={setFilterRole} options={[{v:"all",l:"Все"},{v:"backend",l:"BE"},{v:"frontend",l:"FE"},{v:"qa",l:"QA"},{v:"design",l:"DES"},{v:"manager",l:"MGR"}]} />
+                  <FB label="Сорт." value={sortBy} onChange={setSortBy} options={[{v:"totalPriority",l:"TP ↓"},{v:"effort",l:"Effort ↓"},{v:"businessValue",l:"BV ↓"},{v:"priority",l:"Priority"},{v:"issue",l:"Issue ↑"}]} />
+                </div>
               </div>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{width:"100%",padding:"7px 12px",borderRadius:7,border:"1px solid "+T.border,background:T.bg2,color:T.text1,fontSize:12,outline:"none",marginBottom:8,fontFamily:T.font}} />
-              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                <FB label="Роль" value={filterRole} onChange={setFilterRole} options={[{v:"all",l:"Все"},{v:"backend",l:"BE"},{v:"frontend",l:"FE"},{v:"qa",l:"QA"},{v:"design",l:"DES"},{v:"manager",l:"MGR"}]} />
-                <FB label="Сорт." value={sortBy} onChange={setSortBy} options={[{v:"totalPriority",l:"TP ↓"},{v:"effort",l:"Effort ↓"},{v:"businessValue",l:"BV ↓"},{v:"priority",l:"Priority"},{v:"issue",l:"Issue ↑"}]} />
+              <div style={{flex:1,overflowY:"auto",padding:"8px 12px",display:"flex",flexDirection:"column",gap:6}}>
+                {backlog.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="backlog" onMove={()=>moveToSprint(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
+                {backlog.length===0&&<div style={{textAlign:"center",padding:40,color:T.text3,fontSize:12}}>Бэклог пуст</div>}
               </div>
-            </div>
-            <div style={{flex:1,overflowY:"auto",padding:"8px 12px",display:"flex",flexDirection:"column",gap:6}}>
-              {backlog.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="backlog" onMove={()=>moveToSprint(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
-              {backlog.length===0&&<div style={{textAlign:"center",padding:40,color:T.text3,fontSize:12}}>Бэклог пуст</div>}
-            </div>
+            </>
+            )}
           </div>
 
           {/* Sprint + Capacity */}
@@ -402,7 +486,16 @@ export default function SprintPlanner(){
                   <span style={{fontSize:12,color:T.text3}}>{capacityOpen?"▲":"▼"}</span>
                 </div>
               </div>
-              {capacityOpen&&<div style={{padding:"0 18px 12px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:6}}>{capacity.map(m=><CB key={m.login} m={m} />)}</div>}
+              {capacityOpen&&<>
+                <div style={{padding:"0 18px 8px",display:"flex",gap:2,flexWrap:"wrap"}}>
+                  {[{v:"all",l:"Все"},...ROLES.map(r=>({v:r,l:RL[r]}))].map(o=>(
+                    <button key={o.v} onClick={e=>{e.stopPropagation();setCapacityRoleFilter(o.v)}} style={{padding:"2px 9px",borderRadius:4,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:capacityRoleFilter===o.v?T.bg3:"transparent",color:capacityRoleFilter===o.v?T.text0:T.text3}}>{o.l}</button>
+                  ))}
+                </div>
+                <div style={{padding:"0 18px 12px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:6}}>
+                  {capacity.filter(m=>capacityRoleFilter==="all"||m.role===capacityRoleFilter).map(m=><CB key={m.login} m={m} />)}
+                </div>
+              </>}
             </div>
 
             {/* Sprint */}
@@ -455,7 +548,7 @@ export default function SprintPlanner(){
                   filteredSprint.forEach(i=>{const p=gProject(i)||"Без проекта";if(!groups[p])groups[p]=[];groups[p].push(i)});
                   return Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([proj,items])=>(
                     <div key={proj} style={{borderRadius:10,border:"1px solid "+T.border,overflow:"hidden"}}>
-                      <div style={{padding:"7px 12px",background:T.bg1,display:"flex",alignItems:"center",gap:8,borderBottom:"1px solid "+T.border}}>
+                      <div style={{padding:"7px 12px",background:T.bg2,display:"flex",alignItems:"center",gap:8,borderBottom:"1px solid "+T.border}}>
                         <span style={{fontSize:11,fontWeight:700,color:T.text0}}>{proj}</span>
                         <span style={{fontSize:10,color:T.text3,fontFamily:T.mono}}>{items.length}</span>
                         {(()=>{const t={be:0,fe:0,qa:0,total:0};items.forEach(i=>{const e=getEfforts(i);t.be+=e.be;t.fe+=e.fe;t.qa+=e.qa;t.total+=e.total});return(<span style={{marginLeft:"auto",fontSize:10,fontFamily:T.mono,color:T.text3}}>{t.be>0&&<span style={{color:T.role.backend,marginRight:4}}>BE {t.be}</span>}{t.fe>0&&<span style={{color:T.role.frontend,marginRight:4}}>FE {t.fe}</span>}{t.qa>0&&<span style={{color:T.role.qa,marginRight:4}}>QA {t.qa}</span>}<span style={{color:T.accent}}>Σ {t.total}</span></span>)})()}
@@ -518,14 +611,85 @@ function MemberRow({m,onUpdate,inTeam,onToggle}){const T=useContext(ThemeCtx);re
 );}
 
 // ═══════════════════════════════════════════════════════════════════════════
+// LINE CHART (SVG, no deps)
+// ═══════════════════════════════════════════════════════════════════════════
+const PERSON_PALETTE=["#4ecdc4","#ff4757","#4b7bec","#ffd43b","#26de81","#a55eea","#ffa502","#ff6b81","#70a1ff","#eccc68","#2ed573","#ff6348"];
+function LineChart({data,series,height=170}){
+  const T=useContext(ThemeCtx);
+  if(!data||data.length<2)return<div style={{padding:16,fontSize:11,color:T.text3,textAlign:"center"}}>Нужно минимум 2 спринта с данными</div>;
+  const pL=44,pR=16,pT=14,pB=32,W=560,H=height,cW=W-pL-pR,cH=H-pT-pB;
+  const allVals=series.flatMap(s=>data.map(d=>typeof d[s.key]==="number"?d[s.key]:0));
+  const maxV=Math.max(...allVals,1);
+  const rawStep=maxV/4;
+  const mag=Math.pow(10,Math.floor(Math.log10(rawStep)));
+  const step=Math.ceil(rawStep/mag)*mag||1;
+  const yMax=step*Math.ceil(maxV/step)+step;
+  const xP=i=>pL+(cW/(data.length-1))*i;
+  const yP=v=>pT+cH*(1-Math.min(v,yMax)/yMax);
+  const gridVals=Array.from({length:5},(_,i)=>Math.round(step*i));
+  return(
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",display:"block"}}>
+        {gridVals.map(v=>{const y=yP(v);return(
+          <g key={v}>
+            <line x1={pL} y1={y} x2={W-pR} y2={y} stroke={T.border} strokeWidth="1"/>
+            <text x={pL-5} y={y+3.5} textAnchor="end" fill={T.text3} fontSize="9" fontFamily="monospace">{v}</text>
+          </g>
+        )})}
+        {data.map((d,i)=>(
+          <text key={i} x={xP(i)} y={H-2} textAnchor="middle" fill={T.text2} fontSize="9">{d.label}</text>
+        ))}
+        {series.map(s=>(
+          <g key={s.key}>
+            <polyline points={data.map((d,i)=>`${xP(i).toFixed(1)},${yP(d[s.key]||0).toFixed(1)}`).join(" ")} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round"/>
+            {data.map((d,i)=>(
+              <circle key={i} cx={xP(i)} cy={yP(d[s.key]||0)} r="3.5" fill={s.color} stroke={T.bg1} strokeWidth="1.5">
+                <title>{s.label}: {d[s.key]??"-"}</title>
+              </circle>
+            ))}
+          </g>
+        ))}
+      </svg>
+      <div style={{display:"flex",gap:14,flexWrap:"wrap",justifyContent:"center",marginTop:2}}>
+        {series.map(s=>(
+          <div key={s.key} style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:T.text2}}>
+            <div style={{width:18,height:2.5,borderRadius:2,background:s.color}}/>
+            <span>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // METRICS TAB (snapshot-based)
 // ═══════════════════════════════════════════════════════════════════════════
-function MetricsTab({allMetrics,sprintName,sprint,totals,capacity}){
+function MetricsTab({allMetrics,snapshots,sprintName,sprint,totals,capacity}){
   const T=useContext(ThemeCtx);
+  const [trendTab,setTrendTab]=useState("Усилия");
+  const [assigneeMetric,setAssigneeMetric]=useState("effort");
   const closed=allMetrics.filter(m=>m.status==="closed");
   const avg=useMemo(()=>{if(closed.length===0)return null;const n=closed.length;return{n,avgCompletion:Math.round(closed.reduce((a,m)=>a+m.completionRate,0)/n),avgReopened:+(closed.reduce((a,m)=>a+m.reopened,0)/n).toFixed(1),avgCarryOver:+(closed.reduce((a,m)=>a+m.carryOver,0)/n).toFixed(1)}},[closed]);
   const current=allMetrics.find(m=>m.sprintName===sprintName);
   const reopened=sprint.filter(i=>(gNum(i,FIELDS.REOPEN_COUNTER)||0)>0);
+
+  const trendData=useMemo(()=>allMetrics.map(m=>{
+    const issues=snapshots[m.sprintName]?.start?.issues||[];
+    const endIssues=snapshots[m.sprintName]?.end?.issues||[];
+    const efforts=issues.reduce((a,i)=>({be:a.be+(i.efforts?.be||0),fe:a.fe+(i.efforts?.fe||0),qa:a.qa+(i.efforts?.qa||0),mgr:a.mgr+(i.efforts?.mgr||0),total:a.total+(i.efforts?.total||0)}),{be:0,fe:0,qa:0,mgr:0,total:0});
+    const byAssignee={};
+    issues.forEach(i=>{if(i.assignee){const p=byAssignee[i.assignee]=byAssignee[i.assignee]||{count:0,closed:0,effort:0};p.count++;p.effort+=i.efforts?.total||0;}});
+    endIssues.forEach(i=>{if(RESOLVED_STATES.includes(i.state)){const si=issues.find(s=>s.id===i.id);if(si?.assignee&&byAssignee[si.assignee])byAssignee[si.assignee].closed++;}});
+    const byQA={};
+    issues.forEach(i=>{
+      const a=i.assignee,q=i.qa;
+      if(a){const p=byQA[a]=byQA[a]||{load:0};p.load+=i.efforts?.total||0;}
+      if(q&&q!==a){const p=byQA[q]=byQA[q]||{load:0};p.load+=i.efforts?.qa||0;}
+    });
+    const label=m.sprintName.replace("2026-","").split(" ")[0];
+    return{label,fullLabel:m.sprintName,status:m.status,planned:m.planned,closed:m.completed||0,efforts,byAssignee,byQA};
+  }),[allMetrics,snapshots]);
 
   return(
     <div style={{padding:"20px 24px",maxWidth:900,margin:"0 auto"}}>
@@ -606,7 +770,72 @@ function MetricsTab({allMetrics,sprintName,sprint,totals,capacity}){
       </div>}
 
       {/* Reopened */}
-      {reopened.length>0&&<div><div style={{fontSize:13,fontWeight:700,color:T.text1,marginBottom:10}}>Переоткрытые в {sprintName}</div>{reopened.map(i=><div key={i.idReadable} style={{padding:10,borderRadius:8,background:T.yellowDim,border:"1px solid "+T.yellow+"22",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:11,fontFamily:T.mono,fontWeight:600,color:T.yellow,marginRight:8}}>{i.idReadable}</span><span style={{fontSize:12,color:T.text0}}>{i.summary}</span></div><span style={{fontSize:12,fontFamily:T.mono,fontWeight:700,color:T.yellow}}>×{gNum(i,FIELDS.REOPEN_COUNTER)}</span></div>)}</div>}
+      {reopened.length>0&&<div style={{marginBottom:24}}><div style={{fontSize:13,fontWeight:700,color:T.text1,marginBottom:10}}>Переоткрытые в {sprintName}</div>{reopened.map(i=><div key={i.idReadable} style={{padding:10,borderRadius:8,background:T.yellowDim,border:"1px solid "+T.yellow+"22",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:11,fontFamily:T.mono,fontWeight:600,color:T.yellow,marginRight:8}}>{i.idReadable}</span><span style={{fontSize:12,color:T.text0}}>{i.summary}</span></div><span style={{fontSize:12,fontFamily:T.mono,fontWeight:700,color:T.yellow}}>×{gNum(i,FIELDS.REOPEN_COUNTER)}</span></div>)}</div>}
+
+      {/* Trends */}
+      {(()=>{
+        const allPeople=[...new Set(trendData.flatMap(d=>Object.keys(d.byAssignee)))].sort();
+        const allQA=[...new Set(trendData.flatMap(d=>Object.keys(d.byQA)))].sort();
+        const tabBtnStyle=(active)=>({padding:"4px 12px",borderRadius:5,border:"none",cursor:"pointer",fontSize:11,fontWeight:600,background:active?T.bg3:"transparent",color:active?T.text0:T.text3});
+        return(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div style={{fontSize:13,fontWeight:700,color:T.text1}}>Тренды по спринтам</div>
+              <div style={{display:"flex",gap:2,background:T.bg2,borderRadius:6,padding:1}}>
+                {["Усилия","Задачи","Исполнители","QA"].map(t=>(
+                  <button key={t} onClick={()=>setTrendTab(t)} style={tabBtnStyle(trendTab===t)}>{t}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{padding:16,borderRadius:12,background:T.bg1,border:"1px solid "+T.border}}>
+              {trendTab==="Усилия"&&(
+                <LineChart
+                  data={trendData.map(d=>({label:d.label,total:d.efforts.total,be:d.efforts.be,fe:d.efforts.fe,qa:d.efforts.qa,mgr:d.efforts.mgr}))}
+                  series={[
+                    {key:"total",color:T.accent,label:"Total SP"},
+                    {key:"be",color:T.role.backend,label:"BE"},
+                    {key:"fe",color:T.role.frontend,label:"FE"},
+                    {key:"qa",color:T.role.qa,label:"QA"},
+                    {key:"mgr",color:T.role.manager,label:"MGR"},
+                  ]}
+                />
+              )}
+              {trendTab==="Задачи"&&(
+                <LineChart
+                  data={trendData.map(d=>({label:d.label,planned:d.planned,closed:d.closed}))}
+                  series={[
+                    {key:"planned",color:T.text2,label:"Запланировано"},
+                    {key:"closed",color:T.green,label:"Закрыто"},
+                  ]}
+                />
+              )}
+              {trendTab==="Исполнители"&&(
+                <div>
+                  <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+                    <div style={{display:"flex",gap:2,background:T.bg2,borderRadius:5,padding:1}}>
+                      {[{v:"effort",l:"SP"},{v:"count",l:"Задач"},{v:"closed",l:"Закрыто"}].map(o=>(
+                        <button key={o.v} onClick={()=>setAssigneeMetric(o.v)} style={tabBtnStyle(assigneeMetric===o.v)}>{o.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <LineChart
+                    data={trendData.map(d=>({label:d.label,...Object.fromEntries(allPeople.map(p=>[p,d.byAssignee[p]?.[assigneeMetric]||0]))}))}
+                    series={allPeople.map((p,i)=>({key:p,color:PERSON_PALETTE[i%PERSON_PALETTE.length],label:p.split(".")[0]||p}))}
+                    height={200}
+                  />
+                </div>
+              )}
+              {trendTab==="QA"&&(
+                <LineChart
+                  data={trendData.map(d=>({label:d.label,...Object.fromEntries(allQA.map(p=>[p,d.byQA[p]?.load||0]))}))}
+                  series={allQA.map((p,i)=>({key:p,color:PERSON_PALETTE[i%PERSON_PALETTE.length],label:p.split(".")[0]||p}))}
+                  height={200}
+                />
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -645,7 +874,7 @@ function CB({m}){const T=useContext(ThemeCtx);const{fullName,role,capacity,toler
   <div style={{padding:"8px 10px",background:status==="over"?T.redDim:"rgba(255,255,255,0.015)",borderRadius:8,border:"1px solid "+(status==="over"?T.red+"25":T.border)}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,background:T.role[role]+"20",color:T.role[role]}}>{RL[role]}</span><span style={{fontSize:11,fontWeight:600,color:T.text1}}>{fullName?.split(" ")[0]}</span></div><div style={{display:"flex",alignItems:"baseline",gap:2}}><span style={{fontSize:15,fontWeight:800,color:c,fontFamily:T.mono}}>{load}</span><span style={{fontSize:9,color:T.text3}}>/{capacity}±{tolerance}</span></div></div>
     <div style={{height:4,background:T.bg0,borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:"linear-gradient(90deg,"+c+"88,"+c+")",transition:"width .4s cubic-bezier(.4,0,.2,1)"}} /></div>
-    {tasks.length>0&&<div style={{marginTop:4,display:"flex",gap:3,flexWrap:"wrap"}}>{tasks.map(t=><span key={t.id} style={{fontSize:8,color:T.text3,background:"rgba(255,255,255,0.03)",padding:"0px 4px",borderRadius:2,fontFamily:T.mono}}>{t.id}({t.eff})</span>)}</div>}
+    {tasks.length>0&&<div style={{marginTop:4,display:"flex",gap:3,flexWrap:"wrap"}}>{tasks.map(t=>t.eff===0?<a key={t.id} href={`${__YT_BASE__}/issue/${t.id}`} target="_blank" rel="noreferrer" title="Не проставлен эффорт" style={{fontSize:8,color:T.red,background:T.redDim,padding:"0px 4px",borderRadius:2,fontFamily:T.mono,fontWeight:700,textDecoration:"none"}}>{t.id} ✕</a>:<a key={t.id} href={`${__YT_BASE__}/issue/${t.id}`} target="_blank" rel="noreferrer" style={{fontSize:8,color:T.text3,background:"rgba(255,255,255,0.03)",padding:"0px 4px",borderRadius:2,fontFamily:T.mono,textDecoration:"none"}} onMouseEnter={e=>e.target.style.color=T.accent} onMouseLeave={e=>e.target.style.color=T.text3}>{t.id}({t.eff})</a>)}</div>}
   </div>
 );}
 
