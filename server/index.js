@@ -76,7 +76,7 @@ app.use("/youtrack", async (req, res) => {
 // ── Serve frontend ───────────────────────────────────────────────────────────
 const distPath = join(__dirname, "../dist");
 app.use(express.static(distPath));
-app.get("*", (_req, res) => res.sendFile(join(distPath, "index.html")));
+app.get(/.*/, (_req, res) => res.sendFile(join(distPath, "index.html")));
 
 // ── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
