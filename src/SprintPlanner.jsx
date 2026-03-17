@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect, createContext, useContext } 
 // ═══════════════════════════════════════════════════════════════════════════
 const FIELDS = {
   STATE:"State",TYPE:"Type",PRIORITY:"Priority",EXT_SPRINT:"EXT Sprint",
-  ASSIGNEE:"Assignee",QA:"QA",QA_PRIORITY:"QA Priority",EXT_CATEGORY:"EXT Category",
+  ASSIGNEE:"Assignee",QA:"QA",QA_PRIORITY:"QA Priority",EXT_CATEGORY:"EXT Category",EXT_PROJECT:"EXT Project",
   BACKEND_EFFORT:"Backend Effort",FRONTEND_EFFORT:"Frontend Effort",
   QA_EFFORT:"QA Effort",DESIGN_EFFORT:"Design Effort",
   MANAGER_EFFORT:"Manager effort",TOTAL_PRIORITY:"Total Priority",
@@ -40,6 +40,7 @@ const gEnum=(i,n)=>gf(i,n)?.name??null;
 const gUser=(i,n)=>gf(i,n);
 const gNum=(i,n)=>gf(i,n);
 const gSprints=(i,fieldName)=>{const v=gf(i,fieldName||FIELDS.EXT_SPRINT);return Array.isArray(v)?v.map(x=>x.name):[]};
+const gProject=(i)=>{const v=gf(i,FIELDS.EXT_PROJECT);if(!v)return null;if(Array.isArray(v))return v[0]?.name||null;return v.name||null};
 const getEfforts=(i)=>{const b=gNum(i,FIELDS.BACKEND_EFFORT)||0,f=gNum(i,FIELDS.FRONTEND_EFFORT)||0,q=gNum(i,FIELDS.QA_EFFORT)||0,d=gNum(i,FIELDS.DESIGN_EFFORT)||0,m=gNum(i,FIELDS.MANAGER_EFFORT)||0;return{be:b,fe:f,qa:q,des:d,mgr:m,total:b+f+q+d+m}};
 const effortLabel=(i)=>{const e=getEfforts(i);const p=[];if(e.be)p.push("BE "+e.be);if(e.fe)p.push("FE "+e.fe);if(e.des)p.push("DES "+e.des);if(e.qa)p.push("QA "+e.qa);if(e.mgr)p.push("MGR "+e.mgr);return p.join(" + ")||"—"};
 const effortForRole=(e,r)=>({backend:e.be,frontend:e.fe,design:e.des,manager:e.mgr,qa:e.qa}[r]||0);
@@ -149,6 +150,8 @@ export default function SprintPlanner(){
   const[sprintField,setSprintField]=useState("EXT Sprint");
   const[projectFields,setProjectFields]=useState([]);
   const[filterSprintRole,setFilterSprintRole]=useState("all");
+  const[capacityOpen,setCapacityOpen]=useState(true);
+  const[groupByProject,setGroupByProject]=useState(false);
   const[sortSprint,setSortSprint]=useState("none");
 
   // Load from storage
@@ -385,12 +388,15 @@ export default function SprintPlanner(){
           {/* Sprint + Capacity */}
           <div style={{flex:1,display:"flex",flexDirection:"column"}}>
             {/* Capacity */}
-            <div style={{padding:"12px 18px",borderBottom:"1px solid "+T.border,background:T.bg1}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{borderBottom:"1px solid "+T.border,background:T.bg1}}>
+              <div onClick={()=>setCapacityOpen(o=>!o)} style={{padding:"12px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",userSelect:"none"}} onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <span style={{fontSize:12,fontWeight:700,color:T.text2,textTransform:"uppercase",letterSpacing:".06em"}}>Загрузка команды</span>
-                <div style={{display:"flex",gap:12,fontSize:9,color:T.text3}}>{[{s:"optimal",l:"В норме"},{s:"under",l:"Недогрузка"},{s:"over",l:"Перегрузка"}].map(x=><span key={x.s} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:2,background:T.status[x.s]}} />{x.l}</span>)}</div>
+                <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                  {capacityOpen&&<div style={{display:"flex",gap:12,fontSize:9,color:T.text3}}>{[{s:"optimal",l:"В норме"},{s:"under",l:"Недогрузка"},{s:"over",l:"Перегрузка"}].map(x=><span key={x.s} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:2,background:T.status[x.s]}} />{x.l}</span>)}</div>}
+                  <span style={{fontSize:12,color:T.text3}}>{capacityOpen?"▲":"▼"}</span>
+                </div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:6}}>{capacity.map(m=><CB key={m.login} m={m} />)}</div>
+              {capacityOpen&&<div style={{padding:"0 18px 12px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:6}}>{capacity.map(m=><CB key={m.login} m={m} />)}</div>}
             </div>
 
             {/* Sprint */}
@@ -401,6 +407,7 @@ export default function SprintPlanner(){
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:T.greenDim,color:T.green,fontFamily:T.mono,fontWeight:600}}>{filteredSprint.length}{filterSprintRole!=="all"&&<span style={{opacity:.6}}>/{sprint.length}</span>}</span>
                   <FB label="Роль" value={filterSprintRole} onChange={setFilterSprintRole} options={[{v:"all",l:"Все"},{v:"backend",l:"BE"},{v:"frontend",l:"FE"},{v:"qa",l:"QA"},{v:"design",l:"DES"},{v:"manager",l:"MGR"}]} />
                   <FB label="Сорт." value={sortSprint} onChange={setSortSprint} options={[{v:"none",l:"—"},{v:"assignee",l:"Assignee"},{v:"qa",l:"QA"}]} />
+                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:groupByProject?T.accent:T.text3,fontWeight:600,cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={groupByProject} onChange={e=>setGroupByProject(e.target.checked)} style={{accentColor:T.accent,cursor:"pointer"}} />По проекту</label>
                   {hasStart&&!hasEnd&&<span style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:T.accentDim,color:T.accent,fontWeight:600}}>План зафиксирован</span>}
                   {hasEnd&&<span style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:T.greenDim,color:T.green,fontWeight:600}}>Спринт закрыт</span>}
                 </div>
@@ -436,9 +443,28 @@ export default function SprintPlanner(){
                   )}
                 </div>
               </div>
-              <div style={{padding:"4px 12px 20px",display:"flex",flexDirection:"column",gap:6}}>
-                {filteredSprint.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="sprint" onMove={()=>moveToBacklog(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
-                {sprint.length===0&&<div style={{textAlign:"center",padding:50,border:"2px dashed "+T.border,borderRadius:14,marginTop:8}}><div style={{fontSize:28,color:T.text3,marginBottom:8}}>↓</div><div style={{fontSize:13,fontWeight:600,color:T.text3}}>Перетащите задачи из бэклога</div></div>}
+              <div style={{padding:"4px 12px 20px",display:"flex",flexDirection:"column",gap:groupByProject?10:6}}>
+                {groupByProject?(()=>{
+                  const groups={};
+                  filteredSprint.forEach(i=>{const p=gProject(i)||"Без проекта";if(!groups[p])groups[p]=[];groups[p].push(i)});
+                  return Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([proj,items])=>(
+                    <div key={proj} style={{borderRadius:10,border:"1px solid "+T.border,overflow:"hidden"}}>
+                      <div style={{padding:"7px 12px",background:T.bg1,display:"flex",alignItems:"center",gap:8,borderBottom:"1px solid "+T.border}}>
+                        <span style={{fontSize:11,fontWeight:700,color:T.text0}}>{proj}</span>
+                        <span style={{fontSize:10,color:T.text3,fontFamily:T.mono}}>{items.length}</span>
+                        {(()=>{const t={be:0,fe:0,qa:0,total:0};items.forEach(i=>{const e=getEfforts(i);t.be+=e.be;t.fe+=e.fe;t.qa+=e.qa;t.total+=e.total});return(<span style={{marginLeft:"auto",fontSize:10,fontFamily:T.mono,color:T.text3}}>{t.be>0&&<span style={{color:T.role.backend,marginRight:4}}>BE {t.be}</span>}{t.fe>0&&<span style={{color:T.role.frontend,marginRight:4}}>FE {t.fe}</span>}{t.qa>0&&<span style={{color:T.role.qa,marginRight:4}}>QA {t.qa}</span>}<span style={{color:T.accent}}>Σ {t.total}</span></span>)})()}
+                      </div>
+                      <div style={{padding:"6px 8px",display:"flex",flexDirection:"column",gap:6}}>
+                        {items.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="sprint" onMove={()=>moveToBacklog(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
+                      </div>
+                    </div>
+                  ));
+                })():(
+                  <>
+                    {filteredSprint.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="sprint" onMove={()=>moveToBacklog(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
+                    {sprint.length===0&&<div style={{textAlign:"center",padding:50,border:"2px dashed "+T.border,borderRadius:14,marginTop:8}}><div style={{fontSize:28,color:T.text3,marginBottom:8}}>↓</div><div style={{fontSize:13,fontWeight:600,color:T.text3}}>Перетащите задачи из бэклога</div></div>}
+                  </>
+                )}
               </div>
             </div>
           </div>
