@@ -39,7 +39,7 @@ const gf=(i,n)=>i.customFields?.find(f=>f.name===n)?.value??null;
 const gEnum=(i,n)=>gf(i,n)?.name??null;
 const gUser=(i,n)=>gf(i,n);
 const gNum=(i,n)=>gf(i,n);
-const gSprints=(i)=>{const v=gf(i,FIELDS.EXT_SPRINT);return Array.isArray(v)?v.map(x=>x.name):[]};
+const gSprints=(i,fieldName)=>{const v=gf(i,fieldName||FIELDS.EXT_SPRINT);return Array.isArray(v)?v.map(x=>x.name):[]};
 const getEfforts=(i)=>{const b=gNum(i,FIELDS.BACKEND_EFFORT)||0,f=gNum(i,FIELDS.FRONTEND_EFFORT)||0,q=gNum(i,FIELDS.QA_EFFORT)||0,d=gNum(i,FIELDS.DESIGN_EFFORT)||0,m=gNum(i,FIELDS.MANAGER_EFFORT)||0;return{be:b,fe:f,qa:q,des:d,mgr:m,total:b+f+q+d+m}};
 const effortLabel=(i)=>{const e=getEfforts(i);const p=[];if(e.be)p.push("BE "+e.be);if(e.fe)p.push("FE "+e.fe);if(e.des)p.push("DES "+e.des);if(e.qa)p.push("QA "+e.qa);if(e.mgr)p.push("MGR "+e.mgr);return p.join(" + ")||"—"};
 const effortForRole=(e,r)=>({backend:e.be,frontend:e.fe,design:e.des,manager:e.mgr,qa:e.qa}[r]||0);
@@ -49,7 +49,6 @@ async function getConfig(){try{const r=await fetch("/api/config");return r.ok?r.
 async function patchConfig(data){try{await fetch("/api/config",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})}catch(e){console.error("Config save failed:",e)}}
 
 // ── YouTrack API ──────────────────────────────────────────────────────────
-const DEFAULT_SPRINT_QUERY="";
 const YT_FIELDS="id,idReadable,summary,customFields(name,$type,value(name,login,fullName,isResolved,$type,id))";
 const DEFAULT_QUERIES=[
   {id:"q-all",name:"Весь бэклог",query:"project: ED State: Backlog"},
@@ -141,13 +140,16 @@ export default function SprintPlanner(){
   const[snapAction,setSnapAction]=useState(null);
   const[savedQueries,setSavedQueries]=useState(DEFAULT_QUERIES);
   const[activeQueryId,setActiveQueryId]=useState("q-all");
-  const[sprintQuery,setSprintQuery]=useState(DEFAULT_SPRINT_QUERY);
   const[backlogLoading,setBacklogLoading]=useState(false);
   const[backlogError,setBacklogError]=useState(null);
   const[apiError,setApiError]=useState(null);
   const[teamLogins,setTeamLogins]=useState([]);
   const[projectId,setProjectId]=useState("");
   const[availableSprints,setAvailableSprints]=useState([]);
+  const[sprintField,setSprintField]=useState("EXT Sprint");
+  const[projectFields,setProjectFields]=useState([]);
+  const[filterSprintRole,setFilterSprintRole]=useState("all");
+  const[sortSprint,setSortSprint]=useState("none");
 
   // Load from storage
   useEffect(()=>{
@@ -158,8 +160,9 @@ export default function SprintPlanner(){
       if(cfg.teamLogins&&Array.isArray(cfg.teamLogins)&&cfg.teamLogins.length>0)setTeamLogins(cfg.teamLogins);
       if(cfg.availableSprints&&Array.isArray(cfg.availableSprints)&&cfg.availableSprints.length>0)setAvailableSprints(cfg.availableSprints);
       if(cfg.sprintName)setSprintName(cfg.sprintName);
-      if(cfg.sprintQuery!==undefined)setSprintQuery(cfg.sprintQuery);
       if(cfg.projectId)setProjectId(cfg.projectId);
+      if(cfg.sprintField)setSprintField(cfg.sprintField);
+      if(cfg.projectFields&&Array.isArray(cfg.projectFields)&&cfg.projectFields.length>0)setProjectFields(cfg.projectFields);
       setStorageLoaded(true);
     });
   },[]);
@@ -169,9 +172,10 @@ export default function SprintPlanner(){
   const mergedConfig=useMemo(()=>discoveredMembers.map(m=>{const s=teamConfig.find(c=>c.login===m.login);return s?{...s,fullName:m.fullName}:{login:m.login,fullName:m.fullName,role:"backend",capacity:20,tolerance:2}}),[discoveredMembers,teamConfig]);
   const filteredConfig=useMemo(()=>teamLogins.length>0?mergedConfig.filter(m=>teamLogins.includes(m.login)):mergedConfig,[mergedConfig,teamLogins]);
 
-  const backlog=useMemo(()=>{let items=issues.filter(i=>gEnum(i,FIELDS.STATE)==="Backlog"&&gSprints(i).length===0);if(filterRole!=="all")items=items.filter(i=>{const e=getEfforts(i);return({backend:e.be,frontend:e.fe,qa:e.qa,design:e.des,manager:e.mgr}[filterRole]||0)>0});if(search){const q=search.toLowerCase();items=items.filter(i=>i.summary.toLowerCase().includes(q)||i.idReadable.toLowerCase().includes(q))}const sorts={totalPriority:(a,b)=>(gNum(b,FIELDS.TOTAL_PRIORITY)||0)-(gNum(a,FIELDS.TOTAL_PRIORITY)||0),effort:(a,b)=>getEfforts(b).total-getEfforts(a).total,businessValue:(a,b)=>(gNum(b,FIELDS.BUSINESS_VALUE)||0)-(gNum(a,FIELDS.BUSINESS_VALUE)||0),priority:(a,b)=>{const o={Critical:4,Major:3,Normal:2,Minor:1};return(o[gEnum(b,FIELDS.PRIORITY)]||0)-(o[gEnum(a,FIELDS.PRIORITY)]||0)}};items.sort(sorts[sortBy]||sorts.totalPriority);return items},[issues,sortBy,filterRole,search]);
+  const backlog=useMemo(()=>{let items=issues.filter(i=>!gSprints(i,sprintField).includes(sprintName));if(filterRole!=="all")items=items.filter(i=>{const e=getEfforts(i);return({backend:e.be,frontend:e.fe,qa:e.qa,design:e.des,manager:e.mgr}[filterRole]||0)>0});if(search){const q=search.toLowerCase();items=items.filter(i=>i.summary.toLowerCase().includes(q)||i.idReadable.toLowerCase().includes(q))}const sorts={totalPriority:(a,b)=>(gNum(b,FIELDS.TOTAL_PRIORITY)||0)-(gNum(a,FIELDS.TOTAL_PRIORITY)||0),effort:(a,b)=>getEfforts(b).total-getEfforts(a).total,businessValue:(a,b)=>(gNum(b,FIELDS.BUSINESS_VALUE)||0)-(gNum(a,FIELDS.BUSINESS_VALUE)||0),priority:(a,b)=>{const o={Critical:4,Major:3,Normal:2,Minor:1};return(o[gEnum(b,FIELDS.PRIORITY)]||0)-(o[gEnum(a,FIELDS.PRIORITY)]||0)},issue:(a,b)=>{const n=x=>parseInt(x.idReadable?.replace(/[^0-9]/g,""))||0;return n(a)-n(b)}};items.sort(sorts[sortBy]||sorts.totalPriority);return items},[issues,sortBy,filterRole,search,sprintField]);
 
-  const sprint=useMemo(()=>issues.filter(i=>gSprints(i).includes(sprintName)),[issues,sprintName]);
+  const sprint=useMemo(()=>issues.filter(i=>gSprints(i,sprintField).includes(sprintName)),[issues,sprintName,sprintField]);
+  const filteredSprint=useMemo(()=>{let items=filterSprintRole==="all"?sprint:sprint.filter(i=>{const e=getEfforts(i);return({backend:e.be,frontend:e.fe,qa:e.qa,design:e.des,manager:e.mgr}[filterSprintRole]||0)>0});if(sortSprint==="assignee")items=[...items].sort((a,b)=>(gUser(a,FIELDS.ASSIGNEE)?.fullName||"я").localeCompare(gUser(b,FIELDS.ASSIGNEE)?.fullName||"я"));else if(sortSprint==="qa")items=[...items].sort((a,b)=>(gUser(a,FIELDS.QA)?.fullName||"я").localeCompare(gUser(b,FIELDS.QA)?.fullName||"я"));return items},[sprint,filterSprintRole,sortSprint]);
   const sprintTotals=useMemo(()=>{const t={be:0,fe:0,qa:0,des:0,mgr:0,total:0};sprint.forEach(i=>{const e=getEfforts(i);t.be+=e.be;t.fe+=e.fe;t.qa+=e.qa;t.des+=e.des;t.mgr+=e.mgr;t.total+=e.total});return t},[sprint]);
 
   const capacity=useMemo(()=>{const map={};filteredConfig.forEach(m=>{map[m.login]={...m,load:0,tasks:[]}});sprint.forEach(issue=>{const efforts=getEfforts(issue);const aL=gUser(issue,FIELDS.ASSIGNEE)?.login;const qL=gUser(issue,FIELDS.QA)?.login;if(aL&&map[aL]){const eff=effortForRole(efforts,map[aL].role);if(eff>0){map[aL].load+=eff;map[aL].tasks.push({id:issue.idReadable,eff})}}if(qL&&map[qL]&&efforts.qa>0){map[qL].load+=efforts.qa;map[qL].tasks.push({id:issue.idReadable,eff:efforts.qa})}});Object.values(map).forEach(m=>{if(m.load>m.capacity+m.tolerance)m.status="over";else if(m.load>=m.capacity-m.tolerance)m.status="optimal";else if(m.load>=m.capacity*0.4)m.status="under";else m.status="empty"});return Object.values(map)},[sprint,filteredConfig]);
@@ -184,24 +188,24 @@ export default function SprintPlanner(){
   const loadBacklog=useCallback(async(queryStr)=>{
     setBacklogLoading(true);setBacklogError(null);
     try{
-      const data=await ytFetch(`/api/issues?query=${encodeURIComponent(queryStr)}&fields=${encodeURIComponent(YT_FIELDS)}&$top=100`);
+      const data=await ytFetch(`/api/issues?query=${encodeURIComponent(queryStr)}&fields=${encodeURIComponent(YT_FIELDS)}&$top=500`);
       setIssues(prev=>{
-        const sprintIds=new Set(prev.filter(i=>gSprints(i).includes(sprintName)).map(i=>i.id));
-        const sprintItems=prev.filter(i=>gSprints(i).includes(sprintName));
+        const sprintIds=new Set(prev.filter(i=>gSprints(i,sprintField).includes(sprintName)).map(i=>i.id));
+        const sprintItems=prev.filter(i=>gSprints(i,sprintField).includes(sprintName));
         const newBacklog=data.filter(i=>!sprintIds.has(i.id));
         return[...sprintItems,...newBacklog];
       });
     }catch(e){setBacklogError(e.message)}
     finally{setBacklogLoading(false)}
-  },[sprintName]);
+  },[sprintName,sprintField]);
 
-  const loadSprint=useCallback(async(sName,queryTemplate)=>{
-    if(!queryTemplate)return;
-    const q=queryTemplate.replace("{sprint}",sName);
+  const loadSprint=useCallback(async(sName,pId,sField)=>{
+    if(!pId||!sField||!sName)return;
+    const q=`project: ${pId} ${sField}: {${sName}}`;
     try{
-      const data=await ytFetch(`/api/issues?query=${encodeURIComponent(q)}&fields=${encodeURIComponent(YT_FIELDS)}&$top=100`);
+      const data=await ytFetch(`/api/issues?query=${encodeURIComponent(q)}&fields=${encodeURIComponent(YT_FIELDS)}&$top=500`);
       setIssues(prev=>{
-        const backlogItems=prev.filter(i=>!gSprints(i).includes(sName));
+        const backlogItems=prev.filter(i=>!gSprints(i,sField).includes(sName));
         const backlogIds=new Set(backlogItems.map(i=>i.id));
         const newSprint=data.filter(i=>!backlogIds.has(i.id));
         return[...backlogItems,...newSprint];
@@ -212,8 +216,8 @@ export default function SprintPlanner(){
   const reload=useCallback(()=>{
     const q=savedQueries.find(x=>x.id===activeQueryId);
     if(q)loadBacklog(q.query);
-    loadSprint(sprintName,sprintQuery);
-  },[savedQueries,activeQueryId,sprintName,sprintQuery,loadBacklog,loadSprint]);
+    loadSprint(sprintName,projectId,sprintField);
+  },[savedQueries,activeQueryId,sprintName,projectId,sprintField,loadBacklog,loadSprint]);
 
   // Reload backlog when active query id OR its content changes
   const activeQueryStr=savedQueries.find(x=>x.id===activeQueryId)?.query;
@@ -225,33 +229,33 @@ export default function SprintPlanner(){
 
   useEffect(()=>{
     if(!storageLoaded)return;
-    patchConfig({sprintName,sprintQuery});
-    loadSprint(sprintName,sprintQuery);
+    patchConfig({sprintName,sprintField});
+    loadSprint(sprintName,projectId,sprintField);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[sprintName,sprintQuery,storageLoaded]);
+  },[sprintName,sprintField,projectId,storageLoaded]);
 
   // Actions
   const moveToSprint=useCallback(async id=>{
     const issue=issues.find(i=>i.idReadable===id);
     if(!issue)return;
     // Optimistic update
-    setIssues(prev=>prev.map(i=>{if(i.idReadable!==id)return i;const n=structuredClone(i);const sp=n.customFields.find(f=>f.name===FIELDS.EXT_SPRINT);if(sp)sp.value=[...(sp.value||[]),{name:sprintName,$type:"VersionBundleElement"}];const st=n.customFields.find(f=>f.name===FIELDS.STATE);if(st?.value?.name==="Backlog")st.value={name:"Open",isResolved:false,$type:"StateBundleElement"};return n}));
+    setIssues(prev=>prev.map(i=>{if(i.idReadable!==id)return i;const n=structuredClone(i);const sp=n.customFields.find(f=>f.name===sprintField);if(sp)sp.value=[...(sp.value||[]),{name:sprintName,$type:"VersionBundleElement"}];const st=n.customFields.find(f=>f.name===FIELDS.STATE);if(st?.value?.name==="Backlog")st.value={name:"Open",isResolved:false,$type:"StateBundleElement"};return n}));
     try{
-      const cur=gSprints(issue);
-      await ytPatch(id,{customFields:[{name:"EXT Sprint",$type:"MultiVersionIssueCustomField",value:[...cur,sprintName].map(n=>({name:n}))}]});
+      const cur=gSprints(issue,sprintField);
+      await ytPatch(id,{customFields:[{name:sprintField,$type:"MultiVersionIssueCustomField",value:[...cur,sprintName].map(n=>({name:n}))}]});
     }catch(e){setApiError(e.message);reload()}
-  },[issues,sprintName,reload]);
+  },[issues,sprintName,sprintField,reload]);
 
   const moveToBacklog=useCallback(async id=>{
     const issue=issues.find(i=>i.idReadable===id);
     if(!issue)return;
     // Optimistic update
-    setIssues(prev=>prev.map(i=>{if(i.idReadable!==id)return i;const n=structuredClone(i);const sp=n.customFields.find(f=>f.name===FIELDS.EXT_SPRINT);if(sp)sp.value=(sp.value||[]).filter(v=>v.name!==sprintName);const st=n.customFields.find(f=>f.name===FIELDS.STATE);if(st&&!st.value?.isResolved)st.value={name:"Backlog",isResolved:false,$type:"StateBundleElement"};return n}));
+    setIssues(prev=>prev.map(i=>{if(i.idReadable!==id)return i;const n=structuredClone(i);const sp=n.customFields.find(f=>f.name===sprintField);if(sp)sp.value=(sp.value||[]).filter(v=>v.name!==sprintName);const st=n.customFields.find(f=>f.name===FIELDS.STATE);if(st&&!st.value?.isResolved)st.value={name:"Backlog",isResolved:false,$type:"StateBundleElement"};return n}));
     try{
-      const remaining=gSprints(issue).filter(s=>s!==sprintName);
-      await ytPatch(id,{customFields:[{name:"EXT Sprint",$type:"MultiVersionIssueCustomField",value:remaining.map(n=>({name:n}))}]});
+      const remaining=gSprints(issue,sprintField).filter(s=>s!==sprintName);
+      await ytPatch(id,{customFields:[{name:sprintField,$type:"MultiVersionIssueCustomField",value:remaining.map(n=>({name:n}))}]});
     }catch(e){setApiError(e.message);reload()}
-  },[issues,sprintName,reload]);
+  },[issues,sprintName,sprintField,reload]);
 
   const reassign=useCallback(async(id,field,login)=>{
     // Optimistic update using discoveredMembers
@@ -261,8 +265,8 @@ export default function SprintPlanner(){
     }catch(e){setApiError(e.message)}
   },[discoveredMembers]);
   const onDragStart=id=>setDragId(id);const onDragEnd=()=>{setDragId(null);setDropZone(null)};
-  const onDropSprint=()=>{if(dragId){const s=issues.find(i=>i.idReadable===dragId);if(s&&!gSprints(s).includes(sprintName))moveToSprint(dragId)}setDragId(null);setDropZone(null)};
-  const onDropBacklog=()=>{if(dragId){const s=issues.find(i=>i.idReadable===dragId);if(s&&gSprints(s).includes(sprintName))moveToBacklog(dragId)}setDragId(null);setDropZone(null)};
+  const onDropSprint=()=>{if(dragId){const s=issues.find(i=>i.idReadable===dragId);if(s&&!gSprints(s,sprintField).includes(sprintName))moveToSprint(dragId)}setDragId(null);setDropZone(null)};
+  const onDropBacklog=()=>{if(dragId){const s=issues.find(i=>i.idReadable===dragId);if(s&&gSprints(s,sprintField).includes(sprintName))moveToBacklog(dragId)}setDragId(null);setDropZone(null)};
 
   // Snapshot actions
   const handleSnapshot = useCallback(async(type)=>{
@@ -300,18 +304,21 @@ export default function SprintPlanner(){
     });
   },[]);
 
-  const loadAvailableSprints=useCallback(async(pId)=>{
+  const loadProjectFields=useCallback(async(pId)=>{
     if(!pId)return;
     try{
       const data=await ytFetch(`/api/admin/projects/${encodeURIComponent(pId)}/customFields?fields=field(name),bundle(values(name,isResolved))`);
-      const sprintField=data.find(f=>f.field?.name===FIELDS.EXT_SPRINT);
-      if(sprintField?.bundle?.values){
-        const sprints=sprintField.bundle.values.filter(v=>!v.isResolved).map(v=>v.name);
-        setAvailableSprints(sprints);
-        patchConfig({projectId:pId,availableSprints:sprints});
-      }else{setApiError("Поле EXT Sprint не найдено в проекте "+pId)}
-    }catch(e){setApiError("Спринты: "+e.message)}
+      const fields=data.filter(f=>f.field?.name&&f.bundle?.values?.length>0).map(f=>({name:f.field.name,values:f.bundle.values.filter(v=>!v.isResolved).map(v=>v.name)}));
+      setProjectFields(fields);
+      patchConfig({projectId:pId,projectFields:fields});
+    }catch(e){setApiError("Поля проекта: "+e.message)}
   },[]);
+
+  // When sprintField changes, sync availableSprints from cached projectFields
+  useEffect(()=>{
+    const f=projectFields.find(pf=>pf.name===sprintField);
+    if(f)setAvailableSprints(f.values);
+  },[sprintField,projectFields]);
 
   // All metrics from snapshots
   const allMetrics = useMemo(()=>{
@@ -346,7 +353,7 @@ export default function SprintPlanner(){
         </div>
       </div>
 
-      {tab==="settings"?<SettingsTab members={mergedConfig} onUpdate={updateMember} onSave={handleSaveCap} saveStatus={saveStatus} storageLoaded={storageLoaded} savedQueries={savedQueries} onSaveQuery={saveQuery} onDeleteQuery={deleteQuery} sprintName={sprintName} onSetSprintName={setSprintName} sprintQuery={sprintQuery} onSetSprintQuery={setSprintQuery} teamLogins={teamLogins} onToggleTeamLogin={toggleTeamLogin} projectId={projectId} onSetProjectId={setProjectId} availableSprints={availableSprints} onLoadSprints={loadAvailableSprints} />
+      {tab==="settings"?<SettingsTab members={mergedConfig} onUpdate={updateMember} onSave={handleSaveCap} saveStatus={saveStatus} storageLoaded={storageLoaded} savedQueries={savedQueries} onSaveQuery={saveQuery} onDeleteQuery={deleteQuery} sprintName={sprintName} onSetSprintName={setSprintName} teamLogins={teamLogins} onToggleTeamLogin={toggleTeamLogin} projectId={projectId} onSetProjectId={setProjectId} availableSprints={availableSprints} sprintField={sprintField} onSetSprintField={setSprintField} projectFields={projectFields} onLoadProjectFields={loadProjectFields} />
       :tab==="metrics"?<MetricsTab allMetrics={allMetrics} sprintName={sprintName} sprint={sprint} totals={sprintTotals} capacity={capacity} currentSnap={currentSnap} />
       :(
         <div style={{display:"flex",height:"calc(100vh - 55px)"}}>
@@ -358,7 +365,7 @@ export default function SprintPlanner(){
                 <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:T.bg3,color:T.text2,fontFamily:T.mono,fontWeight:600}}>{backlog.length}</span>
                 {backlogLoading&&<span style={{fontSize:10,color:T.text3}}>Загружаю...</span>}
                 {backlogError&&<span style={{fontSize:10,color:T.red}} title={backlogError}>⚠ Ошибка</span>}
-                <button onClick={reload} title="Обновить" style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",fontSize:13,color:T.text3,padding:2}} onMouseEnter={e=>e.target.style.color=T.text1} onMouseLeave={e=>e.target.style.color=T.text3}>↻</button>
+                <button onClick={reload} title="Обновить" style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",fontSize:25,color:T.text3,padding:2}} onMouseEnter={e=>e.target.style.color=T.text1} onMouseLeave={e=>e.target.style.color=T.text3}>↻</button>
               </div>
               <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
                 {savedQueries.map(q=><button key={q.id} onClick={()=>setActiveQueryId(q.id)} style={{padding:"3px 10px",borderRadius:5,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:activeQueryId===q.id?T.accentDim:"transparent",color:activeQueryId===q.id?T.accent:T.text3}}>{q.name}</button>)}
@@ -366,7 +373,7 @@ export default function SprintPlanner(){
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{width:"100%",padding:"7px 12px",borderRadius:7,border:"1px solid "+T.border,background:T.bg2,color:T.text1,fontSize:12,outline:"none",marginBottom:8,fontFamily:T.font}} />
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                 <FB label="Роль" value={filterRole} onChange={setFilterRole} options={[{v:"all",l:"Все"},{v:"backend",l:"BE"},{v:"frontend",l:"FE"},{v:"qa",l:"QA"},{v:"design",l:"DES"},{v:"manager",l:"MGR"}]} />
-                <FB label="Сорт." value={sortBy} onChange={setSortBy} options={[{v:"totalPriority",l:"TP ↓"},{v:"effort",l:"Effort ↓"},{v:"businessValue",l:"BV ↓"},{v:"priority",l:"Priority"}]} />
+                <FB label="Сорт." value={sortBy} onChange={setSortBy} options={[{v:"totalPriority",l:"TP ↓"},{v:"effort",l:"Effort ↓"},{v:"businessValue",l:"BV ↓"},{v:"priority",l:"Priority"},{v:"issue",l:"Issue ↑"}]} />
               </div>
             </div>
             <div style={{flex:1,overflowY:"auto",padding:"8px 12px",display:"flex",flexDirection:"column",gap:6}}>
@@ -391,7 +398,9 @@ export default function SprintPlanner(){
               <div style={{padding:"12px 18px 8px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:T.bg0,zIndex:5,flexWrap:"wrap",gap:8}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontSize:14,fontWeight:700,color:T.text0}}>{sprintName}</span>
-                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:T.greenDim,color:T.green,fontFamily:T.mono,fontWeight:600}}>{sprint.length}</span>
+                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:T.greenDim,color:T.green,fontFamily:T.mono,fontWeight:600}}>{filteredSprint.length}{filterSprintRole!=="all"&&<span style={{opacity:.6}}>/{sprint.length}</span>}</span>
+                  <FB label="Роль" value={filterSprintRole} onChange={setFilterSprintRole} options={[{v:"all",l:"Все"},{v:"backend",l:"BE"},{v:"frontend",l:"FE"},{v:"qa",l:"QA"},{v:"design",l:"DES"},{v:"manager",l:"MGR"}]} />
+                  <FB label="Сорт." value={sortSprint} onChange={setSortSprint} options={[{v:"none",l:"—"},{v:"assignee",l:"Assignee"},{v:"qa",l:"QA"}]} />
                   {hasStart&&!hasEnd&&<span style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:T.accentDim,color:T.accent,fontWeight:600}}>План зафиксирован</span>}
                   {hasEnd&&<span style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:T.greenDim,color:T.green,fontWeight:600}}>Спринт закрыт</span>}
                 </div>
@@ -428,7 +437,7 @@ export default function SprintPlanner(){
                 </div>
               </div>
               <div style={{padding:"4px 12px 20px",display:"flex",flexDirection:"column",gap:6}}>
-                {sprint.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="sprint" onMove={()=>moveToBacklog(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
+                {filteredSprint.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="sprint" onMove={()=>moveToBacklog(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
                 {sprint.length===0&&<div style={{textAlign:"center",padding:50,border:"2px dashed "+T.border,borderRadius:14,marginTop:8}}><div style={{fontSize:28,color:T.text3,marginBottom:8}}>↓</div><div style={{fontSize:13,fontWeight:600,color:T.text3}}>Перетащите задачи из бэклога</div></div>}
               </div>
             </div>
@@ -445,14 +454,14 @@ const btnS={padding:"4px 10px",borderRadius:5,border:"none",cursor:"pointer",fon
 // ═══════════════════════════════════════════════════════════════════════════
 // SETTINGS TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function SettingsTab({members,onUpdate,onSave,saveStatus,storageLoaded,savedQueries,onSaveQuery,onDeleteQuery,sprintName,onSetSprintName,sprintQuery,onSetSprintQuery,teamLogins,onToggleTeamLogin,projectId,onSetProjectId,availableSprints,onLoadSprints}){
+function SettingsTab({members,onUpdate,onSave,saveStatus,storageLoaded,savedQueries,onSaveQuery,onDeleteQuery,sprintName,onSetSprintName,teamLogins,onToggleTeamLogin,projectId,onSetProjectId,availableSprints,sprintField,onSetSprintField,projectFields,onLoadProjectFields}){
   const T=useContext(ThemeCtx);
   const grouped=useMemo(()=>{const g={};ROLES.forEach(r=>g[r]=[]);members.forEach(m=>{(g[m.role]||g.backend).push(m)});return g},[members]);
   const RN={backend:"Backend-разработчики",frontend:"Frontend-разработчики",qa:"QA-инженеры",design:"Дизайнеры",manager:"Менеджеры"};
   const activeCount=teamLogins.length>0?teamLogins.length:members.length;
   return(
     <div style={{padding:"20px 24px",maxWidth:900,margin:"0 auto"}}>
-      <SprintSettings sprintName={sprintName} onSetSprintName={onSetSprintName} sprintQuery={sprintQuery} onSetSprintQuery={onSetSprintQuery} projectId={projectId} onSetProjectId={onSetProjectId} availableSprints={availableSprints} onLoadSprints={onLoadSprints} />
+      <SprintSettings sprintName={sprintName} onSetSprintName={onSetSprintName} projectId={projectId} onSetProjectId={onSetProjectId} availableSprints={availableSprints} sprintField={sprintField} onSetSprintField={onSetSprintField} projectFields={projectFields} onLoadProjectFields={onLoadProjectFields} />
       <QueryManager queries={savedQueries} onSave={onSaveQuery} onDelete={onDeleteQuery} />
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:12}}>
         <div><h2 style={{fontSize:18,fontWeight:800,color:T.text0,marginBottom:4}}>Настройки команды</h2><p style={{fontSize:12,color:T.text3}}>{activeCount} в команде{teamLogins.length>0&&members.length>activeCount&&<span style={{color:T.yellow}}> · {members.length-activeCount} скрыто</span>} · {members.reduce((a,m)=>a+m.capacity,0)} SP{storageLoaded&&<span style={{marginLeft:8,color:T.accent,fontSize:10}}>● загружено</span>}</p></div>
@@ -479,7 +488,7 @@ function MemberRow({m,onUpdate,inTeam,onToggle}){const T=useContext(ThemeCtx);re
 // ═══════════════════════════════════════════════════════════════════════════
 // METRICS TAB (snapshot-based)
 // ═══════════════════════════════════════════════════════════════════════════
-function MetricsTab({allMetrics,sprintName,sprint,totals,capacity,currentSnap}){
+function MetricsTab({allMetrics,sprintName,sprint,totals,capacity}){
   const T=useContext(ThemeCtx);
   const closed=allMetrics.filter(m=>m.status==="closed");
   const avg=useMemo(()=>{if(closed.length===0)return null;const n=closed.length;return{n,avgCompletion:Math.round(closed.reduce((a,m)=>a+m.completionRate,0)/n),avgReopened:+(closed.reduce((a,m)=>a+m.reopened,0)/n).toFixed(1),avgCarryOver:+(closed.reduce((a,m)=>a+m.carryOver,0)/n).toFixed(1)}},[closed]);
@@ -569,7 +578,7 @@ function TC({issue,index,source,onMove,onDragStart,onDragEnd,isDragging,expanded
   return(
     <div draggable onDragStart={onDragStart} onDragEnd={onDragEnd} className="card-enter" style={{padding:"10px 12px",background:T.bg1,borderRadius:10,border:"1px solid "+T.border,borderLeftWidth:3,borderLeftColor:bc,cursor:"grab",opacity:isDragging?.35:1,transition:"all .15s",animationDelay:index*30+"ms"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=T.borderHover;e.currentTarget.style.borderLeftColor=bc}} onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.borderLeftColor=bc}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:10,fontFamily:T.mono,color:T.text3,fontWeight:600,cursor:"pointer"}} onClick={onToggle}>{issue.idReadable}</span><span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,background:pColor+"18",color:pColor,textTransform:"uppercase"}}>{priority}</span>{state&&state!=="Backlog"&&<span style={{fontSize:8,fontWeight:600,padding:"1px 5px",borderRadius:3,background:T.accentDim,color:T.accent}}>{state}</span>}</div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><a href={`${__YT_BASE__}/issue/${issue.idReadable}`} target="_blank" rel="noreferrer" style={{fontSize:10,fontFamily:T.mono,color:T.text3,fontWeight:600,textDecoration:"none"}} onMouseEnter={e=>e.target.style.color=T.accent} onMouseLeave={e=>e.target.style.color=T.text3}>{issue.idReadable}</a><span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,background:pColor+"18",color:pColor,textTransform:"uppercase"}}>{priority}</span>{state&&state!=="Backlog"&&<span style={{fontSize:8,fontWeight:600,padding:"1px 5px",borderRadius:3,background:T.accentDim,color:T.accent}}>{state}</span>}</div>
         <div style={{display:"flex",alignItems:"center",gap:6}}>{tp!=null&&<span style={{fontSize:10,fontFamily:T.mono,fontWeight:700,color:T.accent}}>TP {tp}</span>}<button onClick={onMove} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.text3,padding:"0 2px",lineHeight:1}} onMouseEnter={e=>e.target.style.color=source==="backlog"?T.green:T.red} onMouseLeave={e=>e.target.style.color=T.text3}>{source==="backlog"?"→":"←"}</button></div>
       </div>
       <div style={{fontSize:12,fontWeight:500,color:T.text0,lineHeight:1.4,marginBottom:7,cursor:"pointer"}} onClick={onToggle}>{issue.summary}</div>
@@ -597,41 +606,62 @@ function CB({m}){const T=useContext(ThemeCtx);const{fullName,role,capacity,toler
 // ═══════════════════════════════════════════════════════════════════════════
 // SPRINT SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════
-function SprintSettings({sprintName,onSetSprintName,sprintQuery,onSetSprintQuery,projectId,onSetProjectId,availableSprints,onLoadSprints}){
+function SprintSettings({sprintName,onSetSprintName,projectId,onSetProjectId,availableSprints,sprintField,onSetSprintField,projectFields,onLoadProjectFields}){
   const T=useContext(ThemeCtx);
+  const[loading,setLoading]=useState(false);
   const inputStyle={padding:"6px 10px",borderRadius:5,border:"1px solid "+T.border,background:T.bg2,color:T.text0,fontSize:12,fontFamily:T.font,outline:"none",width:"100%"};
   const selectStyle={...inputStyle,fontFamily:T.mono,fontWeight:700,cursor:"pointer"};
+
+  const handleLoadFields=async()=>{
+    setLoading(true);
+    await onLoadProjectFields(projectId);
+    setLoading(false);
+  };
+
+  const generatedQuery=projectId&&sprintField&&sprintName?`project: ${projectId} ${sprintField}: ${sprintName}`:"";
+
   return(
     <div style={{marginBottom:28}}>
       <h2 style={{fontSize:18,fontWeight:800,color:T.text0,marginBottom:2}}>Настройки спринта</h2>
-      <p style={{fontSize:11,color:T.text3,marginBottom:14}}>Выберите активный спринт — он будет записываться в задачи при переносе из бэклога</p>
+      <p style={{fontSize:11,color:T.text3,marginBottom:14}}>Укажите проект, выберите поле спринта и текущий спринт</p>
 
-      {/* Project + load */}
-      <div style={{padding:"12px 14px",borderRadius:8,background:T.bg1,border:"1px solid "+T.border,marginBottom:10,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-        <span style={{fontSize:12,fontWeight:600,color:T.text2,flexShrink:0}}>Проект YouTrack</span>
-        <input value={projectId} onChange={e=>onSetProjectId(e.target.value)} placeholder="EXT" style={{...inputStyle,width:90,fontFamily:T.mono,fontWeight:700}} />
-        <button onClick={()=>onLoadSprints(projectId)} disabled={!projectId} style={{...btnS,background:T.accentDim,color:T.accent,padding:"6px 12px",opacity:projectId?1:0.4}}>Загрузить спринты</button>
-        {availableSprints.length>0&&<span style={{fontSize:10,color:T.text3}}>{availableSprints.length} спринтов загружено</span>}
+      {/* Step 1: Project prefix */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:T.bg1,border:"1px solid "+T.border,marginBottom:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+        <span style={{fontSize:12,fontWeight:600,color:T.text2,minWidth:130,flexShrink:0}}>1. Префикс проекта</span>
+        <input value={projectId} onChange={e=>onSetProjectId(e.target.value)} onKeyDown={e=>e.key==="Enter"&&projectId&&handleLoadFields()} placeholder="EXT" style={{...inputStyle,width:90,fontFamily:T.mono,fontWeight:700}} />
+        <button onClick={handleLoadFields} disabled={!projectId||loading} style={{...btnS,background:T.accentDim,color:T.accent,padding:"6px 12px",opacity:projectId&&!loading?1:0.4}}>
+          {loading?"Загружаю...":"Загрузить поля"}
+        </button>
+        {projectFields.length>0&&<span style={{fontSize:10,color:T.text3}}>{projectFields.length} полей загружено</span>}
       </div>
 
-      {/* Active sprint picker */}
-      <div style={{padding:"12px 14px",borderRadius:8,background:T.bg1,border:"1px solid "+T.border,marginBottom:10,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-        <span style={{fontSize:12,fontWeight:600,color:T.text2,minWidth:120,flexShrink:0}}>Активный спринт</span>
+      {/* Step 2: Sprint field picker */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:T.bg1,border:"1px solid "+T.border,marginBottom:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",opacity:projectFields.length>0?1:0.45}}>
+        <span style={{fontSize:12,fontWeight:600,color:T.text2,minWidth:130,flexShrink:0}}>2. Поле спринта</span>
+        {projectFields.length>0
+          ?<select value={sprintField} onChange={e=>onSetSprintField(e.target.value)} style={{...selectStyle,width:220}}>
+              {projectFields.map(f=><option key={f.name} value={f.name}>{f.name}</option>)}
+            </select>
+          :<input value={sprintField} onChange={e=>onSetSprintField(e.target.value)} placeholder="EXT Sprint" style={{...inputStyle,width:220,fontFamily:T.mono,fontWeight:700}} />}
+        <span style={{fontSize:10,color:T.text3}}>поле типа multi-version (список спринтов)</span>
+      </div>
+
+      {/* Step 3: Active sprint picker */}
+      <div style={{padding:"12px 14px",borderRadius:8,background:T.bg1,border:"1px solid "+T.border,marginBottom:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",opacity:sprintField?1:0.45}}>
+        <span style={{fontSize:12,fontWeight:600,color:T.text2,minWidth:130,flexShrink:0}}>3. Текущий спринт</span>
         {availableSprints.length>0
-          ?<select value={sprintName} onChange={e=>onSetSprintName(e.target.value)} style={{...selectStyle,width:220}}>{availableSprints.map(s=><option key={s} value={s}>{s}</option>)}</select>
+          ?<select value={sprintName} onChange={e=>onSetSprintName(e.target.value)} style={{...selectStyle,width:220}}>
+              {availableSprints.map(s=><option key={s} value={s}>{s}</option>)}
+            </select>
           :<input value={sprintName} onChange={e=>onSetSprintName(e.target.value)} placeholder="Sprint 25" style={{...inputStyle,width:220,fontFamily:T.mono,fontWeight:700}} />}
-        <span style={{fontSize:10,color:T.text3}}>записывается в поле EXT Sprint при переносе задачи</span>
+        {availableSprints.length>0&&<span style={{fontSize:10,color:T.text3}}>{availableSprints.length} значений</span>}
       </div>
 
-      {/* Sprint query template */}
-      <div style={{padding:"12px 14px",borderRadius:8,background:T.bg1,border:"1px solid "+T.border,marginBottom:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-          <span style={{fontSize:12,fontWeight:600,color:T.text2,minWidth:120}}>Квери спринта</span>
-          <span style={{fontSize:10,color:T.text3}}>Используйте <code style={{fontFamily:T.mono,background:T.bg3,padding:"1px 4px",borderRadius:3}}>{"{sprint}"}</code> — будет заменено названием спринта</span>
-        </div>
-        <input value={sprintQuery} onChange={e=>onSetSprintQuery(e.target.value)} placeholder='project: EXT {EXT Sprint}: {sprint}' style={{...inputStyle,fontFamily:T.mono,fontSize:11}} />
-        {!sprintQuery&&<div style={{marginTop:4,fontSize:10,color:T.yellow}}>⚠ Не заполнено — задачи спринта не загружаются</div>}
-      </div>
+      {/* Generated query preview */}
+      {generatedQuery&&<div style={{padding:"8px 12px",borderRadius:6,background:T.bg0,border:"1px solid "+T.border,fontSize:10,color:T.text3,fontFamily:T.mono}}>
+        Запрос спринта: <span style={{color:T.accent}}>{generatedQuery}</span>
+      </div>}
+      {!projectId&&<div style={{marginTop:6,fontSize:10,color:T.yellow}}>⚠ Заполните префикс проекта — задачи спринта не загружаются</div>}
     </div>
   );
 }

@@ -68,8 +68,8 @@ app.use("/youtrack", async (req, res) => {
     });
     res.send(data);
   } catch (err) {
-    console.error("Proxy error:", err.message);
-    res.status(502).json({ error: "YouTrack proxy error", detail: err.message });
+    console.error("Proxy error:", err.message, "| URL:", targetUrl, "| cause:", err.cause?.message || err.cause);
+    res.status(502).json({ error: "YouTrack proxy error", detail: err.message, cause: err.cause?.message });
   }
 });
 

@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     ],
+    define: {
+      __YT_BASE__: JSON.stringify(env.YOUTRACK_URL),
+    },
     server: {
       proxy: {
         "/youtrack": {
