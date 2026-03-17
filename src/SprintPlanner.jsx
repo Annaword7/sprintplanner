@@ -25,12 +25,6 @@ const DEFAULT_CAPACITY = [
 ];
 
 
-// Pre-baked historical snapshots (older sprints already closed)
-const SEED_SNAPSHOTS = {
-  "Sprint 22":{start:{timestamp:1706745600000,issues:[{id:"S22-1",state:"Open",efforts:{be:5,fe:3,qa:4,des:0,mgr:0,total:12}},{id:"S22-2",state:"Open",efforts:{be:8,fe:0,qa:5,des:0,mgr:0,total:13}},{id:"S22-3",state:"Open",efforts:{be:0,fe:5,qa:3,des:2,mgr:0,total:10}},{id:"S22-4",state:"Open",efforts:{be:3,fe:0,qa:2,des:0,mgr:0,total:5}},{id:"S22-5",state:"Open",efforts:{be:0,fe:0,qa:0,des:0,mgr:4,total:4}},{id:"S22-6",state:"Open",efforts:{be:5,fe:0,qa:3,des:0,mgr:0,total:8}},{id:"S22-7",state:"Open",efforts:{be:0,fe:6,qa:3,des:0,mgr:0,total:9}},{id:"S22-8",state:"Open",efforts:{be:0,fe:0,qa:0,des:4,mgr:0,total:4}},{id:"S22-9",state:"Open",efforts:{be:5,fe:3,qa:3,des:0,mgr:0,total:11}},{id:"S22-10",state:"Open",efforts:{be:3,fe:0,qa:2,des:0,mgr:0,total:5}},{id:"S22-11",state:"Open",efforts:{be:5,fe:5,qa:4,des:0,mgr:0,total:14}},{id:"S22-12",state:"Open",efforts:{be:0,fe:0,qa:0,des:0,mgr:4,total:4}},{id:"S22-13",state:"Open",efforts:{be:4,fe:0,qa:3,des:0,mgr:0,total:7}},{id:"S22-14",state:"Open",efforts:{be:0,fe:0,qa:0,des:0,mgr:3,total:3}}]},end:{timestamp:1707955200000,issues:[{id:"S22-1",state:"Done",reopens:0},{id:"S22-2",state:"Done",reopens:1},{id:"S22-3",state:"Done",reopens:0},{id:"S22-4",state:"Done",reopens:0},{id:"S22-5",state:"Done",reopens:0},{id:"S22-6",state:"Done",reopens:1},{id:"S22-7",state:"Done",reopens:0},{id:"S22-8",state:"Done",reopens:0},{id:"S22-9",state:"In Progress",reopens:0},{id:"S22-10",state:"Done",reopens:0},{id:"S22-11",state:"Open",reopens:0},{id:"S22-12",state:"Done",reopens:0},{id:"S22-13",state:"Done",reopens:0},{id:"S22-14",state:"In Progress",reopens:0}]}},
-  "Sprint 23":{start:{timestamp:1707955200000,issues:[{id:"S23-1",state:"Open",efforts:{be:5,fe:0,qa:3,des:0,mgr:0,total:8}},{id:"S23-2",state:"Open",efforts:{be:0,fe:5,qa:3,des:2,mgr:0,total:10}},{id:"S23-3",state:"Open",efforts:{be:8,fe:0,qa:5,des:0,mgr:0,total:13}},{id:"S23-4",state:"Open",efforts:{be:0,fe:0,qa:0,des:0,mgr:5,total:5}},{id:"S23-5",state:"Open",efforts:{be:3,fe:0,qa:2,des:0,mgr:0,total:5}},{id:"S23-6",state:"Open",efforts:{be:0,fe:5,qa:3,des:0,mgr:0,total:8}},{id:"S23-7",state:"Open",efforts:{be:5,fe:3,qa:3,des:0,mgr:0,total:11}},{id:"S23-8",state:"Open",efforts:{be:0,fe:0,qa:0,des:4,mgr:0,total:4}},{id:"S23-9",state:"Open",efforts:{be:5,fe:0,qa:3,des:0,mgr:0,total:8}},{id:"S23-10",state:"Open",efforts:{be:3,fe:5,qa:4,des:0,mgr:0,total:12}},{id:"S23-11",state:"Open",efforts:{be:3,fe:0,qa:2,des:0,mgr:0,total:5}},{id:"S23-12",state:"Open",efforts:{be:0,fe:0,qa:0,des:0,mgr:3,total:3}}]},end:{timestamp:1709164800000,issues:[{id:"S23-1",state:"Done",reopens:0},{id:"S23-2",state:"Done",reopens:0},{id:"S23-3",state:"Done",reopens:1},{id:"S23-4",state:"Done",reopens:0},{id:"S23-5",state:"Done",reopens:0},{id:"S23-6",state:"Done",reopens:0},{id:"S23-7",state:"In Progress",reopens:0},{id:"S23-8",state:"Done",reopens:0},{id:"S23-9",state:"Done",reopens:0},{id:"S23-10",state:"Done",reopens:0},{id:"S23-11",state:"Done",reopens:0},{id:"S23-12",state:"Open",reopens:0}]}},
-  "Sprint 24":{start:{timestamp:1709164800000,issues:[{id:"S24-1",state:"Open",efforts:{be:8,fe:0,qa:5,des:0,mgr:0,total:13}},{id:"S24-2",state:"Open",efforts:{be:0,fe:8,qa:5,des:2,mgr:0,total:15}},{id:"S24-3",state:"Open",efforts:{be:5,fe:0,qa:3,des:0,mgr:0,total:8}},{id:"S24-4",state:"Open",efforts:{be:0,fe:5,qa:3,des:0,mgr:0,total:8}},{id:"S24-5",state:"Open",efforts:{be:0,fe:0,qa:0,des:0,mgr:5,total:5}},{id:"S24-6",state:"Open",efforts:{be:5,fe:3,qa:3,des:0,mgr:0,total:11}},{id:"S24-7",state:"Open",efforts:{be:3,fe:0,qa:2,des:0,mgr:0,total:5}},{id:"S24-8",state:"Open",efforts:{be:0,fe:5,qa:3,des:3,mgr:0,total:11}},{id:"S24-9",state:"Open",efforts:{be:5,fe:0,qa:3,des:0,mgr:0,total:8}},{id:"S24-10",state:"Open",efforts:{be:0,fe:0,qa:0,des:3,mgr:0,total:3}},{id:"S24-11",state:"Open",efforts:{be:5,fe:5,qa:4,des:0,mgr:0,total:14}},{id:"S24-12",state:"Open",efforts:{be:0,fe:0,qa:0,des:0,mgr:4,total:4}},{id:"S24-13",state:"Open",efforts:{be:5,fe:0,qa:3,des:0,mgr:0,total:8}},{id:"S24-14",state:"Open",efforts:{be:4,fe:0,qa:2,des:0,mgr:0,total:6}},{id:"S24-15",state:"Open",efforts:{be:0,fe:2,qa:1,des:0,mgr:0,total:3}}]},end:{timestamp:1710374400000,issues:[{id:"S24-1",state:"Done",reopens:1},{id:"S24-2",state:"Done",reopens:0},{id:"S24-3",state:"Done",reopens:0},{id:"S24-4",state:"Done",reopens:1},{id:"S24-5",state:"Done",reopens:0},{id:"S24-6",state:"In Progress",reopens:0},{id:"S24-7",state:"Done",reopens:0},{id:"S24-8",state:"Done",reopens:1},{id:"S24-9",state:"Done",reopens:0},{id:"S24-10",state:"Done",reopens:0},{id:"S24-11",state:"Open",reopens:0},{id:"S24-12",state:"Done",reopens:0},{id:"S24-13",state:"In Progress",reopens:0},{id:"S24-14",state:"Done",reopens:0},{id:"S24-15",state:"Done",reopens:0}]}},
-};
 
 const RESOLVED_STATES = ["Done","Fixed","Verified"];
 
@@ -62,8 +56,19 @@ async function ytPatch(idReadable,body){const r=await fetch(`/youtrack/api/issue
 
 // ── Snapshot helpers ─────────────────────────────────────────────────────
 function createSnapshot(sprintIssues) {
+  const total = sprintIssues.length;
+  const projectCounts = {};
+  sprintIssues.forEach(i => {
+    const p = gProject(i) || "Без проекта";
+    projectCounts[p] = (projectCounts[p] || 0) + 1;
+  });
+  const projects = Object.entries(projectCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count, pct: total > 0 ? Math.round(count / total * 100) : 0 }));
+
   return {
     timestamp: Date.now(),
+    projects,
     issues: sprintIssues.map(i => ({
       id: i.idReadable,
       summary: i.summary,
@@ -82,8 +87,10 @@ function computeMetrics(sprintName, snapData) {
   const startCount = snapData.start.issues.length;
   const startEffort = snapData.start.issues.reduce((a, i) => a + (i.efforts?.total || 0), 0);
 
+  const projects = snapData.start.projects || [];
+
   if (!snapData.end) {
-    return { sprintName, planned: startCount, plannedEffort: startEffort, completed: null, reopened: null, carryOver: null, completionRate: null, added: null, removed: null, status: "active" };
+    return { sprintName, planned: startCount, plannedEffort: startEffort, projects, completed: null, reopened: null, carryOver: null, completionRate: null, added: null, removed: null, status: "active" };
   }
 
   const endMap = {};
@@ -102,7 +109,7 @@ function computeMetrics(sprintName, snapData) {
   const removed = [...startIds].filter(id => !endIds.has(id)).length;
 
   return {
-    sprintName, planned: startCount, plannedEffort: startEffort,
+    sprintName, planned: startCount, plannedEffort: startEffort, projects,
     completed, reopened: totalReopens, carryOver,
     completionRate: startCount > 0 ? Math.round((completed / startCount) * 100) : 0,
     added, removed, status: "closed",
@@ -137,7 +144,7 @@ export default function SprintPlanner(){
   const[teamConfig,setTeamConfig]=useState(DEFAULT_CAPACITY);
   const[storageLoaded,setStorageLoaded]=useState(false);
   const[saveStatus,setSaveStatus]=useState(null);
-  const[snapshots,setSnapshots]=useState(SEED_SNAPSHOTS);
+  const[snapshots,setSnapshots]=useState({});
   const[snapAction,setSnapAction]=useState(null);
   const[savedQueries,setSavedQueries]=useState(DEFAULT_QUERIES);
   const[activeQueryId,setActiveQueryId]=useState("q-all");
@@ -326,8 +333,7 @@ export default function SprintPlanner(){
   // All metrics from snapshots
   const allMetrics = useMemo(()=>{
     const results=[];
-    const sprintOrder=["Sprint 22","Sprint 23","Sprint 24","Sprint 25","Sprint 26"];
-    sprintOrder.forEach(name=>{
+    Object.keys(snapshots).sort().forEach(name=>{
       const sd=snapshots[name];
       if(sd){const m=computeMetrics(name,sd);if(m)results.push(m)}
     });
@@ -556,20 +562,34 @@ function MetricsTab({allMetrics,sprintName,sprint,totals,capacity}){
 
       {/* Sprint History from snapshots */}
       <div style={{fontSize:13,fontWeight:700,color:T.text1,marginBottom:10}}>История спринтов (из снапшотов)</div>
-      {closed.length===0?<div style={{padding:16,borderRadius:10,background:T.bg1,border:"1px solid "+T.border,fontSize:12,color:T.text3,marginBottom:20}}>Нет закрытых спринтов</div>:(
+      {allMetrics.length===0?<div style={{padding:16,borderRadius:10,background:T.bg1,border:"1px solid "+T.border,fontSize:12,color:T.text3,marginBottom:20}}>Нет снапшотов</div>:(
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-          {closed.map(s=>{const p=s.completionRate;return(
-            <div key={s.sprintName} style={{padding:14,borderRadius:10,background:T.bg1,border:"1px solid "+T.border}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{fontSize:13,fontWeight:700,color:T.text0}}>{s.sprintName}</span><span style={{fontSize:20,fontWeight:800,fontFamily:T.mono,color:p>=80?T.green:p>=60?T.yellow:T.red}}>{p}%</span></div>
-              <div style={{height:6,background:T.bg0,borderRadius:3,marginBottom:8,overflow:"hidden"}}><div style={{height:"100%",width:p+"%",borderRadius:3,background:p>=80?T.green:p>=60?T.yellow:T.red}} /></div>
-              <div style={{display:"flex",gap:12,fontSize:11,color:T.text2,flexWrap:"wrap"}}>
+          {allMetrics.map(s=>{
+            const isActive=s.status==="active";
+            const p=s.completionRate;
+            return(
+            <div key={s.sprintName} style={{padding:14,borderRadius:10,background:T.bg1,border:"1px solid "+(isActive?T.accent+"44":T.border)}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <span style={{fontSize:13,fontWeight:700,color:T.text0}}>{s.sprintName}</span>
+                {isActive
+                  ?<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:T.accentDim,color:T.accent,fontWeight:600}}>В процессе · {s.planned} задач</span>
+                  :<span style={{fontSize:20,fontWeight:800,fontFamily:T.mono,color:p>=80?T.green:p>=60?T.yellow:T.red}}>{p}%</span>
+                }
+              </div>
+              {!isActive&&<div style={{height:6,background:T.bg0,borderRadius:3,marginBottom:8,overflow:"hidden"}}><div style={{height:"100%",width:p+"%",borderRadius:3,background:p>=80?T.green:p>=60?T.yellow:T.red}} /></div>}
+              <div style={{display:"flex",gap:12,fontSize:11,color:T.text2,flexWrap:"wrap",marginBottom:s.projects?.length?8:0}}>
                 <span>Запланировано: <b style={{color:T.text0}}>{s.planned}</b></span>
-                <span>Выполнено: <b style={{color:T.green}}>{s.completed}</b></span>
+                {!isActive&&<><span>Выполнено: <b style={{color:T.green}}>{s.completed}</b></span>
                 <span>Переоткрыто: <b style={{color:T.yellow}}>{s.reopened}</b></span>
                 <span>Carry-over: <b style={{color:T.red}}>{s.carryOver}</b></span>
                 {s.added>0&&<span>Добавлено: <b style={{color:T.blue}}>+{s.added}</b></span>}
-                {s.removed>0&&<span>Убрано: <b style={{color:T.text3}}>-{s.removed}</b></span>}
+                {s.removed>0&&<span>Убрано: <b style={{color:T.text3}}>-{s.removed}</b></span>}</>}
               </div>
+              {s.projects?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {s.projects.map(p=><span key={p.name} style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:T.bg0,border:"1px solid "+T.border,color:T.text2}}>
+                  <b style={{color:T.text1}}>{p.name}</b> · {p.count} задач · <b style={{color:T.accent}}>{p.pct}%</b>
+                </span>)}
+              </div>}
             </div>
           )})}
         </div>
