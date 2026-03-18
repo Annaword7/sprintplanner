@@ -1,86 +1,107 @@
-# Sprint Planner Backend — Extranet Delivery
+# Sprint Planner
 
-## Architecture
+Инструмент планирования спринтов с живым подключением к YouTrack. Позволяет перетаскивать задачи из бэклога в спринт, следить за загрузкой команды, фиксировать снепшоты спринта и смотреть аналитику по спринтам.
+
+## Возможности
+
+- **Бэклог и спринт** — перетаскивание задач, фильтрация по роли, поиск, сортировка, группировка по EXT Project
+- **Загрузка команды** — расчёт нагрузки по ролям (BE/FE/QA/DES/MGR), фильтр по роли, визуальные индикаторы перегрузки/недогрузки
+- **Снепшоты** — фиксация плана спринта и закрытие с сохранением состава задач и разбивки по проектам
+- **Метрики** — история спринтов, тренды нагрузки по ролям, запланированное vs. закрытое, аналитика по исполнителям и QA
+- **Тёмная / светлая тема**
+
+## Структура проекта
 
 ```
 src/
-├── config/
-│   └── fields.js              # YouTrack field names, types, whitelist
-├── mock/
-│   └── mock-data.js           # Mock data in exact YouTrack API format
-├── api/
-│   └── youtrack-client.js     # API client (mock → real swap point)
-├── services/
-│   ├── backlog-service.js     # Sorting, filtering, plan/unplan
-│   ├── capacity-service.js    # Team load calculations
-│   └── metrics-service.js     # Sprint completion metrics
-└── index.js                   # Public API entry point
+└── SprintPlanner.jsx   # Весь фронтенд (React SPA)
+
+server/
+└── index.js            # Express-сервер: прокси к YouTrack + /api/config
+
+data/
+└── config.json         # Постоянное хранилище: настройки команды, снепшоты
+
+.env                    # YOUTRACK_URL и YOUTRACK_TOKEN (не коммитить)
 ```
 
-## Key Design Decisions
+## Быстрый старт
 
-### 1. YouTrack API Response Format
-All mock data uses **exact YouTrack REST API response format**:
-- `customFields` array with `name`, `$type`, `value`
-- User entities with `login`, `fullName`, `$type: "User"`
-- Sprint entities with `id`, `name`, `$type: "Sprint"`
-
-This means **zero data transformation** when switching to real API.
-
-### 2. Write Whitelist
-Only three fields can be modified (defined in `config/fields.js`):
-- `Assignee` — reassign developer
-- `QA` — reassign QA engineer
-- `EXT Sprint` — add/remove from sprint
-
-Any attempt to write other fields throws an error.
-
-### 3. Field Name Accuracy
-All field names exactly match the Extranet Delivery project in YouTrack:
-- `Backend Effort`, `Frontend Effort`, `QA Effort`, `Design Effort`, `Manager effort`
-- `Total Priority` (float) for backlog sorting
-- `• Reopen counter` for metrics (note the bullet character)
-- `EXT Sprint` (version multi) as the only sprint field
-
-### 4. Effort Model
-No story points. Capacity is calculated per-role from effort fields:
-- Assignee's effort = Backend/Frontend/Design/Manager effort (based on their role)
-- QA's effort = QA Effort field
-- Each team member has capacity ± tolerance (e.g., 20±2 SP)
-
-## Switching to Real YouTrack API
-
-When ready, replace method bodies in `youtrack-client.js`:
-
-```javascript
-// BEFORE (mock):
-export async function getBacklogIssues() {
-  await delay();
-  return _issues.filter(/* ... */);
-}
-
-// AFTER (real):
-export async function getBacklogIssues() {
-  const response = await fetch(
-    `${BASE_URL}/api/issues?` +
-    `query=${encodeURIComponent('project:ED State:Backlog')}&` +
-    `fields=${ISSUES_QUERY_FIELDS}&` +
-    `$top=100`,
-    { headers: AUTH_HEADERS }
-  );
-  return response.json();
-}
-```
-
-The services layer and frontend need **no changes** — they consume
-the same data format.
-
-## Running the Demo
+### 1. Установить зависимости
 
 ```bash
-node demo.js
+npm install
 ```
 
-Exercises all methods: backlog retrieval, filtering, sprint planning,
-capacity calculation, metrics, reassignment, and security checks.
-# sprintplanner
+### 2. Создать `.env`
+
+```bash
+cp .env.example .env
+```
+
+Заполнить в `.env`:
+
+```
+YOUTRACK_URL=https://yourcompany.youtrack.cloud
+YOUTRACK_TOKEN=perm:ваш-токен
+```
+
+Токен можно получить в YouTrack: **Profile → Account Security → Tokens**.
+
+### 3. Запустить
+
+**Режим разработки** (Vite dev server с HMR):
+
+```bash
+npm run dev
+```
+
+**Продакшн** (сборка + Express):
+
+```bash
+npm run start:prod
+```
+
+Приложение откроется на `http://localhost:3000`.
+
+## Как работает подключение к YouTrack
+
+Все запросы к YouTrack API проходят через серверный прокси `/youtrack/*`, который автоматически добавляет заголовок авторизации. Фронтенд никогда не обращается к YouTrack напрямую и не хранит токен.
+
+```
+Браузер → /youtrack/api/issues → Express-прокси → https://yourcompany.youtrack.cloud/api/issues
+```
+
+Конфигурация команды и снепшоты спринтов хранятся в `data/config.json` и доступны через `/api/config` (GET/PATCH).
+
+## Настройка через интерфейс
+
+В разделе **⚙ Настройки** можно:
+
+- Указать **Project ID** и загрузить поля проекта из YouTrack
+- Выбрать **Sprint Field** (поле, в котором хранятся спринты)
+- Задать **название текущего спринта**
+- Настроить **состав команды**: роль, ёмкость, допуск (±SP)
+- Сохранить и переключаться между **запросами бэклога**
+
+## Модель расчёта нагрузки
+
+Нагрузка считается по полям эффорта задачи:
+
+| Роль | Поле эффорта |
+|------|-------------|
+| BE | Backend Effort |
+| FE | Frontend Effort |
+| QA | QA Effort |
+| DES | Design Effort |
+| MGR | Manager effort |
+
+**Правило для QA-инженеров:** нагрузка = сумма эффорта задач, где они исполнители (assignee) + QA Effort задач, где они только reviewer.
+
+**Если разработчик сам является QA:** нагрузка = эффорт по своей роли + QA Effort той же задачи.
+
+## Снепшоты и метрики
+
+- **Зафиксировать план** — сохраняет состав спринта на старте (с разбивкой по EXT Project)
+- **Закрыть спринт** — сохраняет финальный состав; после этого спринт попадает в историю метрик
+- **Метрики** показывают тренды по спринтам: нагрузка по ролям, запланированное vs. закрытое, топ исполнителей и QA
