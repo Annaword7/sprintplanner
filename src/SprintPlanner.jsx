@@ -233,6 +233,7 @@ export default function SprintPlanner(){
   const[capacityRoleFilter,setCapacityRoleFilter]=useState("all");
   const[backlogCollapsed,setBacklogCollapsed]=useState(false);
   const[groupByProject,setGroupByProject]=useState(false);
+  const[groupBacklogByProject,setGroupBacklogByProject]=useState(false);
   const[sortSprint,setSortSprint]=useState("none");
 
   // Load from storage
@@ -462,14 +463,36 @@ export default function SprintPlanner(){
                   {savedQueries.map(q=><button key={q.id} onClick={()=>setActiveQueryId(q.id)} style={{padding:"3px 10px",borderRadius:5,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:activeQueryId===q.id?T.accentDim:"transparent",color:activeQueryId===q.id?T.accent:T.text3}}>{q.name}</button>)}
                 </div>
                 <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{width:"100%",padding:"7px 12px",borderRadius:7,border:"1px solid "+T.border,background:T.bg2,color:T.text1,fontSize:12,outline:"none",marginBottom:8,fontFamily:T.font}} />
-                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
                   <FB label="Роль" value={filterRole} onChange={setFilterRole} options={[{v:"all",l:"Все"},{v:"backend",l:"BE"},{v:"frontend",l:"FE"},{v:"qa",l:"QA"},{v:"design",l:"DES"},{v:"manager",l:"MGR"}]} />
                   <FB label="Сорт." value={sortBy} onChange={setSortBy} options={[{v:"totalPriority",l:"TP ↓"},{v:"effort",l:"Effort ↓"},{v:"businessValue",l:"BV ↓"},{v:"priority",l:"Priority"},{v:"issue",l:"Issue ↑"}]} />
+                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:groupBacklogByProject?T.accent:T.text3,fontWeight:600,cursor:"pointer",userSelect:"none"}}><input type="checkbox" checked={groupBacklogByProject} onChange={e=>setGroupBacklogByProject(e.target.checked)} style={{accentColor:T.accent,cursor:"pointer"}} />По проекту</label>
                 </div>
               </div>
-              <div style={{flex:1,overflowY:"auto",padding:"8px 12px",display:"flex",flexDirection:"column",gap:6}}>
-                {backlog.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="backlog" onMove={()=>moveToSprint(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
-                {backlog.length===0&&<div style={{textAlign:"center",padding:40,color:T.text3,fontSize:12}}>Бэклог пуст</div>}
+              <div style={{flex:1,overflowY:"auto",padding:"8px 12px",display:"flex",flexDirection:"column",gap:groupBacklogByProject?10:6}}>
+                {groupBacklogByProject?(()=>{
+                  const groups={};
+                  backlog.forEach(i=>{const p=(gProject(i)||"").trim()||"Без проекта";if(!groups[p])groups[p]=[];groups[p].push(i)});
+                  const entries=Object.entries(groups).filter(([,items])=>items.length>0).sort(([a],[b])=>a.localeCompare(b));
+                  if(entries.length===0)return <div style={{textAlign:"center",padding:40,color:T.text3,fontSize:12}}>Бэклог пуст</div>;
+                  return entries.map(([proj,items])=>(
+                    <div key={proj} style={{borderRadius:10,border:"1px solid "+T.border}}>
+                      <div style={{padding:"7px 12px",background:T.bg2,display:"flex",alignItems:"center",gap:8,borderBottom:"1px solid "+T.border,borderRadius:"10px 10px 0 0"}}>
+                        <span style={{fontSize:11,fontWeight:700,color:T.text0}}>{proj}</span>
+                        <span style={{fontSize:10,color:T.text3,fontFamily:T.mono}}>{items.length}</span>
+                        {(()=>{const t={be:0,fe:0,qa:0,total:0};items.forEach(i=>{const e=getEfforts(i);t.be+=e.be;t.fe+=e.fe;t.qa+=e.qa;t.total+=e.total});return(<span style={{marginLeft:"auto",fontSize:10,fontFamily:T.mono,color:T.text3}}>{t.be>0&&<span style={{color:T.role.backend,marginRight:4}}>BE {t.be}</span>}{t.fe>0&&<span style={{color:T.role.frontend,marginRight:4}}>FE {t.fe}</span>}{t.qa>0&&<span style={{color:T.role.qa,marginRight:4}}>QA {t.qa}</span>}<span style={{color:T.accent}}>Σ {t.total}</span></span>)})()}
+                      </div>
+                      <div style={{padding:"6px 8px",display:"flex",flexDirection:"column",gap:6}}>
+                        {items.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="backlog" onMove={()=>moveToSprint(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
+                      </div>
+                    </div>
+                  ));
+                })():(
+                  <>
+                    {backlog.map((issue,idx)=><TC key={issue.idReadable} issue={issue} index={idx} source="backlog" onMove={()=>moveToSprint(issue.idReadable)} onDragStart={()=>onDragStart(issue.idReadable)} onDragEnd={onDragEnd} isDragging={dragId===issue.idReadable} expanded={expandedCard===issue.idReadable} onToggle={()=>setExpandedCard(expandedCard===issue.idReadable?null:issue.idReadable)} onReassign={reassign} capacityMap={capacity} teamConfig={mergedConfig} allUsers={filteredConfig} />)}
+                    {backlog.length===0&&<div style={{textAlign:"center",padding:40,color:T.text3,fontSize:12}}>Бэклог пуст</div>}
+                  </>
+                )}
               </div>
             </>
             )}
